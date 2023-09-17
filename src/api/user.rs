@@ -338,6 +338,7 @@ impl ApiUser {
             return Err(Error::from_status(StatusCode::FORBIDDEN));
         }
 
+        //如果是magic token，及是邀请用户。则进行如下逻辑。
         let (mt_gid, extra_email, extra_password) = if let Some(magic_token) = &req.magic_token {
             let mt = match MagicLinkToken::parse(&key_config.server_key, magic_token) {
                 Some(magic_token) => magic_token,

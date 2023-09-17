@@ -166,20 +166,20 @@ impl State {
         let is_guest = matches!(&create_user.create_by, CreateUserBy::Guest);
 
         // check license
-        {
-            if cache
-                .users
-                .iter()
-                .filter(|(_, user)| !user.is_guest)
-                .count()
-                >= crate::license::G_LICENSE.lock().await.user_limit as usize
-            {
-                return Err(CreateUserError::PoemError(poem::Error::from_string(
-                    "License error: Users reached limit.",
-                    StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
-                )));
-            }
-        }
+        // {
+        //     if cache
+        //         .users
+        //         .iter()
+        //         .filter(|(_, user)| !user.is_guest)
+        //         .count()
+        //         >= crate::license::G_LICENSE.lock().await.user_limit as usize
+        //     {
+        //         return Err(CreateUserError::PoemError(poem::Error::from_string(
+        //             "License error: Users reached limit.",
+        //             StatusCode::UNAVAILABLE_FOR_LEGAL_REASONS,
+        //         )));
+        //     }
+        // }
 
         if !cache.check_name_conflict(create_user.name) {
             return Err(CreateUserError::NameConflict);
