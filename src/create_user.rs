@@ -332,6 +332,7 @@ impl State {
                 webhook_url: create_user.webhook_url.map(ToString::to_string),
                 is_bot: create_user.is_bot,
                 bot_keys: Default::default(),
+                authTwitter: false,
             },
         );
 

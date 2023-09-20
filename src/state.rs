@@ -141,6 +141,7 @@ pub struct CacheUser {
     pub webhook_url: Option<String>,
     pub is_bot: bool,
     pub bot_keys: HashMap<i64, BotKey>,
+    pub authTwitter:bool,
 }
 
 impl CacheUser {
@@ -408,11 +409,12 @@ pub struct State {
 impl State {
     pub async fn load_users_cache(db: &SqlitePool) -> sqlx::Result<BTreeMap<i64, CacheUser>> {
         let mut users = BTreeMap::new();
-        let sql = "select uid, email, name, password, gender, is_admin, language, create_by, created_at, updated_at, avatar_updated_at, status, is_guest, webhook_url, is_bot from user";
+        let sql = "select uid,auth_twitter, email, name, password, gender, is_admin, language, create_by, created_at, updated_at, avatar_updated_at, status, is_guest, webhook_url, is_bot from user";
         let mut stream = sqlx::query_as::<
             _,
             (
                 i64,
+                bool,
                 Option<String>,
                 String,
                 Option<String>,
@@ -433,6 +435,7 @@ impl State {
         while let Some(res) = stream.next().await {
             let (
                 uid,
+                authTwitter,
                 email,
                 name,
                 password,
@@ -549,6 +552,7 @@ impl State {
                 uid,
                 CacheUser {
                     email,
+                    authTwitter,
                     name,
                     password,
                     gender,

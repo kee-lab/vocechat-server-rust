@@ -468,6 +468,24 @@ impl ApiUser {
         Ok(Json(cache.check_email_conflict(&email)))
     }
 
+    /// check user has been finished twitter auth
+    #[oai(path="/authByTwitter",method = "get")]
+    async fn auth_by_twitter(&self,state:Data<&State>,token: Token)->Result<Json<bool>>{
+        let cache = state.cache.read().await;
+        let user_id = token.uid;
+        let user = cache.users.get(&user_id);
+        if let Some(user)  = user{
+            if user.authTwitter {
+                Ok(Json(true))
+            }else{
+                Ok(Json(false))
+            }
+        }else{
+            Ok(Json(false))
+        }
+        
+    }
+
     /// Send register magic link to email
     /// return the new magic token
     #[oai(path = "/send_reg_magic_link", method = "post")]
