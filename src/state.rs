@@ -141,7 +141,7 @@ pub struct CacheUser {
     pub webhook_url: Option<String>,
     pub is_bot: bool,
     pub bot_keys: HashMap<i64, BotKey>,
-    pub authTwitter:bool,
+    pub auth_twitter:bool,
 }
 
 impl CacheUser {
@@ -552,7 +552,7 @@ impl State {
                 uid,
                 CacheUser {
                     email,
-                    authTwitter,
+                    auth_twitter: authTwitter,
                     name,
                     password,
                     gender,

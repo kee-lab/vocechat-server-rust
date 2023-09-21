@@ -471,18 +471,30 @@ impl ApiUser {
     /// check user has been finished twitter auth
     #[oai(path="/authByTwitter",method = "get")]
     async fn auth_by_twitter(&self,state:Data<&State>,token: Token)->Result<Json<bool>>{
-        let cache = state.cache.read().await;
-        let user_id = token.uid;
-        let user = cache.users.get(&user_id);
-        if let Some(user)  = user{
-            if user.authTwitter {
-                Ok(Json(true))
-            }else{
-                Ok(Json(false))
-            }
-        }else{
-            Ok(Json(false))
+        let uid = token.uid;
+        let db_pool = &state.db_pool;
+        let auth_twitter = sqlx::query_as::<_, (bool,)>("SELECT auth_twitter from user u where uid=1")
+            .bind(uid)
+            .fetch_optional(db_pool)
+            .await
+            .map_err(InternalServerError)?
+            .map(|(auth_twitter,)| auth_twitter);
+        match auth_twitter {
+            Some(is_auth_twitter)=>Ok(Json(is_auth_twitter)),
+            None=>Ok(Json(false)),
         }
+    // let cache = state.cache.read().await;
+        // let user_id = token.uid;
+        // let user = cache.users.get(&user_id);
+        // if let Some(user)  = user{
+        //     if user.auth_twitter {
+        //         Ok(Json(true))
+        //     }else{
+        //         Ok(Json(false))
+        //     }
+        // }else{
+        //     Ok(Json(false))
+        // }
         
     }
 
