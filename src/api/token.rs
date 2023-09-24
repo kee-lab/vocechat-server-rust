@@ -87,6 +87,7 @@ impl Deref for TokenInQuery {
     }
 }
 
+/// check token transfer to current user.
 async fn api_checker(req: &Request, api_key: ApiKey) -> Option<CurrentUser> {
     let state = req.extensions().get::<State>().unwrap();
     let key_config = state.key_config.read().await;

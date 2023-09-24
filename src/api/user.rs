@@ -469,7 +469,7 @@ impl ApiUser {
     }
 
     /// check user has been finished twitter auth
-    #[oai(path="/authByTwitter",method = "get")]
+    #[oai(path="/authByTwitter",method = "get", transform = "guest_forbidden")]
     async fn auth_by_twitter(&self,state:Data<&State>,token: Token)->Result<Json<bool>>{
         let uid = token.uid;
         let db_pool = &state.db_pool;
