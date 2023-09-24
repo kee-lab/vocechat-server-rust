@@ -3,8 +3,10 @@ webclient_url = "https://s.voce.chat/web_client/v0.3.x"
 
 [system]
 data_dir = "./data"
-token_expiry_seconds = 300
-refresh_token_expiry_seconds = 604800
+#token_expiry_seconds = 300
+token_expiry_seconds = 604800
+#refresh_token_expiry_seconds = 604800
+refresh_token_expiry_seconds = 1604800
 # magic_token_expiry_seconds = 600
 
 [network]
