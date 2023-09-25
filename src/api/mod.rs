@@ -3,6 +3,7 @@ use poem_openapi::{OpenApi, OpenApiService};
 mod admin_agora;
 mod admin_fcm;
 mod admin_github_auth;
+mod admin_twitter_auth;
 mod admin_google_auth;
 mod admin_login;
 mod admin_smtp;

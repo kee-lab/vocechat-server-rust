@@ -1065,6 +1065,8 @@ impl ApiToken {
         do_login(&state, uid, &req.0.device, req.0.device_token.as_deref()).await
     }
 
+    //twitterAuth
+
     /// Bind credential
     #[oai(path = "/bind", method = "post", transform = "guest_forbidden")]
     async fn bind(
@@ -1485,7 +1487,7 @@ async fn parse_google_id_token(token: &str) -> anyhow::Result<GoogleIdTokenPaylo
     }
 }
 
-// curl -d "client_id=xxxxx&client_secret=xxxxx&code=xxxx&redirect_uri=http://localhost:3000/" https://github.com/login/oauth/access_token
+// curl -d "client_id=xxxxx&client_secret=xxxxx&code=xxxx&redirect_uri=http://localhost:3000/" https://twitter.com/login/oauth/access_token
 async fn github_fetch_token(code: &str, state: &State) -> anyhow::Result<String> {
     use crate::api::admin_github_auth::GithubAuthConfig;
     let entry = state.load_dynamic_config::<GithubAuthConfig>().await?;
@@ -1512,6 +1514,34 @@ async fn github_fetch_token(code: &str, state: &State) -> anyhow::Result<String>
     let access_token = pairs.get("access_token").cloned().unwrap_or_default();
     Ok(access_token)
 }
+
+// curl -d "client_id=xxxxx&client_secret=xxxxx&code=xxxx&redirect_uri=http://localhost:3000/" https://github.com/login/oauth/access_token
+// async fn github_fetch_token(code: &str, state: &State) -> anyhow::Result<String> {
+//     use crate::api::admin_github_auth::GithubAuthConfig;
+//     let entry = state.load_dynamic_config::<GithubAuthConfig>().await?;
+
+//     let params = [
+//         ("client_id", entry.config.client_id),
+//         ("client_secret", entry.config.client_secret),
+//         ("code", code.to_string()),
+//     ]; // , ("redirect_uri", "")
+//     let client = reqwest::Client::new();
+//     let res = client
+//         .post("https://github.com/login/oauth/access_token")
+//         .header("User-Agent", "Vocechat")
+//         .form(&params)
+//         .send()
+//         .await?;
+//     // access_token=xxxxx&scope=user&token_type=bearer
+//     // error=bad_verification_code&
+//     // error_description=The+code+passed+is+incorrect+or+expired.&error_uri=https%
+//     // 3A%2F%2Fdocs.github.com%2Fapps%2Fmanaging-oauth
+//     let body = res.text().await?;
+//     tracing::debug!(body = body.as_str());
+//     let pairs = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
+//     let access_token = pairs.get("access_token").cloned().unwrap_or_default();
+//     Ok(access_token)
+// }
 
 // curl -H "Authorization: token xxxxxxxx" https://api.github.com/user
 // {
