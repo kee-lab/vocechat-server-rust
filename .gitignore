@@ -1,5 +1,6 @@
 target
 /data
+/data1
 .idea
 build/docker/config
 build/docker/wwwroot

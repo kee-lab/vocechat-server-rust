@@ -3,7 +3,6 @@ use poem_openapi::{OpenApi, OpenApiService};
 mod admin_agora;
 mod admin_fcm;
 mod admin_github_auth;
-mod admin_twitter_auth;
 mod admin_google_auth;
 mod admin_login;
 mod admin_smtp;
@@ -70,7 +69,7 @@ pub fn create_api_service() -> OpenApiService<impl OpenApi, ()> {
             admin_github_auth::ApiAdminGithubAuth,
             bot::ApiBot,
         ),
-        "Voce Chat",
+        "KeeBee",
         env!("CARGO_PKG_VERSION"),
     )
 }
