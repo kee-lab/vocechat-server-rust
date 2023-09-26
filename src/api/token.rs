@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, time::Duration};
+use std::{collections::HashMap, ops::Deref, time::Duration, string};
 
 use bytes::Bytes;
 use chrono::Utc;
@@ -306,6 +306,13 @@ enum BindCredential {
 struct BindRequest {
     /// Credential
     credential: BindCredential,
+}
+
+/// Bind request
+#[derive(Debug, Object)]
+struct TwitterCodeRequest {
+    /// Credential
+    code:  String,
 }
 
 #[derive(ApiResponse)]
@@ -1066,6 +1073,19 @@ impl ApiToken {
     }
 
     //twitterAuth
+    #[oai(path="/twitterAuth", method="post")]
+    async fn twitter_auth(&self,state:Data<&State>,token:Token,req:Json<TwitterCodeRequest>) ->Result<()>
+    {
+        let code = &req.code;
+        // fetch id_token by code
+        let token = twitter_fetch_token(code, &state)
+        .await
+        .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+        let github_userinfo = github_fetch_user_info(&token)
+        .await
+        .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+        Ok(())
+    }
 
     /// Bind credential
     #[oai(path = "/bind", method = "post", transform = "guest_forbidden")]
@@ -1524,11 +1544,14 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
         ("client_id", entry.config.client_id),
         ("client_secret", entry.config.client_secret),
         ("code", code.to_string()),
+        ("grant_type", "authorization_code".to_string()),
+        ("code_verifier", "challenge".to_string()),
+        ("redirect_uri", "https://127.0.0.1/auth/".to_string()),
     ]; // , ("redirect_uri", "")
     let client = reqwest::Client::new();
     let res = client
-        .post("https://github.com/login/oauth/access_token")
-        .header("User-Agent", "Vocechat")
+        .post("https://api.twitter.com/2/oauth2/token")
+        .header("User-Agent", "keebee")
         .form(&params)
         .send()
         .await?;
@@ -1541,6 +1564,44 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
     let pairs = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
     let access_token = pairs.get("access_token").cloned().unwrap_or_default();
     Ok(access_token)
+}
+
+struct TwitterUserInfo {
+    username: String,
+    email: Option<String>,
+    avatar_url: Option<String>,
+}
+
+async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
+    let client = reqwest::Client::new();
+    let res = client
+        .get("https://api.twitter.com/2/user")
+        .header("User-Agent", "keebee")
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await?;
+    // access_token=xxxxx&scope=user&token_type=bearer
+    let body = res.text().await?;
+    tracing::debug!(body = body.as_str());
+    let pairs: serde_json::Value = serde_json::from_str(&body)?;
+    let username = pairs
+        .get("login")
+        .and_then(|v| v.as_str())
+        .unwrap()
+        .to_string();
+    let email = pairs
+        .get("email")
+        .and_then(|v| v.as_str())
+        .map(ToString::to_string);
+    let avatar_url = pairs
+        .get("avatar_url")
+        .and_then(|v| v.as_str())
+        .map(ToString::to_string);
+    Ok(TwitterUserInfo {
+        username,
+        email,
+        avatar_url,
+    })
 }
 
 // curl -H "Authorization: token xxxxxxxx" https://api.github.com/user
