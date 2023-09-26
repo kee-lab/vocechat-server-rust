@@ -32,11 +32,29 @@ impl DynamicConfig for TwitterAuthConfig {
     }
 }
 
+/// Google authentication config
+#[derive(Debug, Object, Serialize, Deserialize, Default)]
+pub struct GoogleAuthConfig {
+    pub client_id: String,
+}
+
+impl DynamicConfig for GoogleAuthConfig {
+    type Instance = GoogleAuthConfig;
+
+    fn name() -> &'static str {
+        "google-auth"
+    }
+
+    fn create_instance(self, _config: &Config) -> Self::Instance {
+        GoogleAuthConfig {
+            client_id: String::new(),
+        }
+    }
+}
 
 
 
-
-pub struct ApiAdminGithubAuth;
+pub struct ApiAdminAuth;
 
 /// Github authentication config
 #[derive(Debug, Object, Serialize, Deserialize, Default)]
@@ -60,8 +78,8 @@ impl DynamicConfig for GithubAuthConfig {
     }
 }
 
-#[OpenApi(prefix_path = "/admin", tag = "ApiTags::AdminGithubAuth")]
-impl ApiAdminGithubAuth {
+#[OpenApi(prefix_path = "/admin", tag = "ApiTags::AdminThridAuth")]
+impl ApiAdminAuth {
     /// Set Github auth config
     #[oai(path = "/github_auth/config", method = "post")]
     async fn set_github_config(
@@ -113,6 +131,33 @@ impl ApiAdminGithubAuth {
     #[oai(path = "/twitter_auth/config", method = "get")]
     async fn get_twitter_config(&self, state: Data<&State>) -> Result<Json<TwitterAuthConfig>> {
         let entry = state.load_dynamic_config::<TwitterAuthConfig>().await?;
+        Ok(Json(entry.config))
+    }
+
+    /// Set Google auth config
+    #[oai(path = "/google_auth/config", method = "post")]
+    async fn set_config(
+        &self,
+        state: Data<&State>,
+        token: Token,
+        config: Json<GoogleAuthConfig>,
+    ) -> Result<()> {
+        if !token.is_admin {
+            return Err(Error::from_status(StatusCode::FORBIDDEN));
+        }
+        state
+            .set_dynamic_config(DynamicConfigEntry {
+                enabled: true,
+                config: config.0,
+            })
+            .await?;
+        Ok(())
+    }
+
+    /// Get Google auth config
+    #[oai(path = "/google_auth/config", method = "get")]
+    async fn get_config(&self, state: Data<&State>) -> Result<Json<GoogleAuthConfig>> {
+        let entry = state.load_dynamic_config::<GoogleAuthConfig>().await?;
         Ok(Json(entry.config))
     }
 }

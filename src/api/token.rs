@@ -1489,7 +1489,7 @@ async fn parse_google_id_token(token: &str) -> anyhow::Result<GoogleIdTokenPaylo
 
 // curl -d "client_id=xxxxx&client_secret=xxxxx&code=xxxx&redirect_uri=http://localhost:3000/" https://twitter.com/login/oauth/access_token
 async fn github_fetch_token(code: &str, state: &State) -> anyhow::Result<String> {
-    use crate::api::admin_github_auth::GithubAuthConfig;
+    use crate::api::admin_third_auth::GithubAuthConfig;
     let entry = state.load_dynamic_config::<GithubAuthConfig>().await?;
 
     let params = [

@@ -2,8 +2,7 @@ use poem_openapi::{OpenApi, OpenApiService};
 
 mod admin_agora;
 mod admin_fcm;
-mod admin_github_auth;
-mod admin_google_auth;
+mod admin_third_auth;
 mod admin_login;
 mod admin_smtp;
 mod admin_system;
@@ -65,8 +64,7 @@ pub fn create_api_service() -> OpenApiService<impl OpenApi, ()> {
             admin_fcm::ApiAdminFirebase,
             admin_smtp::ApiAdminSmtp,
             admin_login::ApiAdminLogin,
-            admin_google_auth::ApiAdminGoogleAuth,
-            admin_github_auth::ApiAdminGithubAuth,
+            admin_third_auth::ApiAdminAuth,
             bot::ApiBot,
         ),
         "KeeBee",
