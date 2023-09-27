@@ -27,7 +27,8 @@ Client Secret:
 
 https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=https://127.0.0.1/auth/&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
 
-https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=http://127.0.0.1:3009/#/authTwitterCode&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
+https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=http://127.0.0.1:3009/authTwitterCode&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
+https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=http%3A%2F%2F127.0.0.1%3A3009%2F%23%2FauthTwitterCode&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
 
 https://127.0.0.1/auth/?state=state&code=SEh4Y3RhRHNJcC1DbW5QRURydjg1ejNza1lrR1NCMGNHVG5TVWVEUHBuSkFkOjE2OTM2Njk1ODEzNzE6MToxOmFjOjE
 
