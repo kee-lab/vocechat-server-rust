@@ -1081,7 +1081,7 @@ impl ApiToken {
         let token = twitter_fetch_token(code, &state)
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
-        let github_userinfo = github_fetch_user_info(&token)
+        let twitter_userinfo = twitter_fetch_user_info(&token)
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
         Ok(())
@@ -1542,16 +1542,17 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
 
     let params = [
         ("client_id", entry.config.client_id),
-        ("client_secret", entry.config.client_secret),
+        // ("client_secret", entry.config.client_secret),
         ("code", code.to_string()),
         ("grant_type", "authorization_code".to_string()),
         ("code_verifier", "challenge".to_string()),
-        ("redirect_uri", "https://127.0.0.1/auth/".to_string()),
+        ("redirect_uri", "http://127.0.0.1:3009/twitter/cb/webapp.html".to_string()),
     ]; // , ("redirect_uri", "")
     let client = reqwest::Client::new();
     let res = client
         .post("https://api.twitter.com/2/oauth2/token")
         .header("User-Agent", "keebee")
+        .header("Content-Type", "application/x-www-form-urlencoded")
         .form(&params)
         .send()
         .await?;
@@ -1568,14 +1569,14 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
 
 struct TwitterUserInfo {
     username: String,
-    email: Option<String>,
-    avatar_url: Option<String>,
+    id: Option<String>,
+    profile_image_url: Option<String>,
 }
 
 async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
     let client = reqwest::Client::new();
     let res = client
-        .get("https://api.twitter.com/2/user")
+        .get("https://api.twitter.com/2/users/me?user.fields=created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,url,username,verified,withheld")
         .header("User-Agent", "keebee")
         .header("Authorization", format!("Bearer {}", token))
         .send()
@@ -1585,22 +1586,22 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
     tracing::debug!(body = body.as_str());
     let pairs: serde_json::Value = serde_json::from_str(&body)?;
     let username = pairs
-        .get("login")
+        .get("username")
         .and_then(|v| v.as_str())
         .unwrap()
         .to_string();
-    let email = pairs
-        .get("email")
+    let id = pairs
+        .get("id")
         .and_then(|v| v.as_str())
         .map(ToString::to_string);
-    let avatar_url = pairs
-        .get("avatar_url")
+    let profile_image_url = pairs
+        .get("profile_image_url")
         .and_then(|v| v.as_str())
         .map(ToString::to_string);
     Ok(TwitterUserInfo {
         username,
-        email,
-        avatar_url,
+        id,
+        profile_image_url,
     })
 }
 

@@ -25,13 +25,21 @@ VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ
 Client Secret:
 90cmt12HTENsJPlEuZbKBAO6YVnM96CGKwV_dEcl4-Lyi_O2gM
 
-https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=https://127.0.0.1/auth/&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
+https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=${location.origin}/twitter/cb/webapp.html&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
 
-https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=http://127.0.0.1:3009/authTwitterCode&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
-https://twitter.com/i/oauth2/authorize?response_type=code&client_id=VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ&redirect_uri=http%3A%2F%2F127.0.0.1%3A3009%2F%23%2FauthTwitterCode&scope=tweet.read%20users.read%20follows.read%20follows.write&state=state&code_challenge=challenge&code_challenge_method=plain
+http://127.0.0.1/twitter/cb/webapp.html?state=state&code=SEh4Y3RhRHNJcC1DbW5QRURydjg1ejNza1lrR1NCMGNHVG5TVWVEUHBuSkFkOjE2OTM2Njk1ODEzNzE6MToxOmFjOjE
 
-https://127.0.0.1/auth/?state=state&code=SEh4Y3RhRHNJcC1DbW5QRURydjg1ejNza1lrR1NCMGNHVG5TVWVEUHBuSkFkOjE2OTM2Njk1ODEzNzE6MToxOmFjOjE
 
+      
+curl --location --request POST 'https://api.twitter.com/2/oauth2/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode 'code=VGNibzFWSWREZm01bjN1N3dicWlNUG1oa2xRRVNNdmVHelJGY2hPWGxNd2dxOjE2MjIxNjA4MjU4MjU6MToxOmFjOjE' \
+--data-urlencode 'grant_type=authorization_code' \
+--data-urlencode 'client_id=rG9n6402A3dbUJKzXTNX4oWHJ' \
+--data-urlencode 'redirect_uri=https://www.example.com' \
+--data-urlencode 'code_verifier=challenge'
+
+    
 
 INSERT INTO config (name,enabled,value) VALUES
 	 ('twitter-auth',1,'{"client_id":"VDJXUzBESDhhUDlyWjBDa0FtckE6MTpjaQ","client_secret":"90cmt12HTENsJPlEuZbKBAO6YVnM96CGKwV_dEcl4-Lyi_O2gM"}');
