@@ -28,6 +28,7 @@ use poem_openapi::{
 use rc_magic_link::MagicLinkToken;
 use rc_token::{parse_token, TokenType};
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, Map};
 use sha2::Sha256;
 
 use crate::{
@@ -1082,8 +1083,11 @@ impl ApiToken {
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
         let twitter_userinfo = twitter_fetch_user_info(&token)
+        // save twitter_userinfo into db.
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+
+        todo!("save userinfo to db");
         Ok(())
     }
 
@@ -1562,9 +1566,12 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
     // 3A%2F%2Fdocs.github.com%2Fapps%2Fmanaging-oauth
     let body = res.text().await?;
     tracing::debug!(body = body.as_str());
-    let pairs = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
-    let access_token = pairs.get("access_token").cloned().unwrap_or_default();
-    Ok(access_token)
+    let parsed: Value = serde_json::from_str(&body)?;
+    let access_token = parsed.get("access_token").unwrap().as_str().unwrap();
+    // let pairs = serde_urlencoded::from_str::<HashMap<String, String>>(&body)?;
+    // let access_token = obj.get("access_token").cloned().unwrap_or_default().to_string();
+    tracing::debug!(access_token = access_token);
+    Ok(access_token.to_string())
 }
 
 struct TwitterUserInfo {
@@ -1581,10 +1588,11 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
         .header("Authorization", format!("Bearer {}", token))
         .send()
         .await?;
-    // access_token=xxxxx&scope=user&token_type=bearer
+    //Authorization: Bearer YUdCQnNBSHJQSU5TV0F0RG5zVDItek92SkowX3lwajhGRl9nN1RMd1UxSEdLOjE2OTU4NjcwMTkxOTY6MTowOmF0OjE
     let body = res.text().await?;
     tracing::debug!(body = body.as_str());
-    let pairs: serde_json::Value = serde_json::from_str(&body)?;
+    let data = serde_json::from_str::<Value>(&body)?;
+    let pairs = data.get("data").unwrap().clone();
     let username = pairs
         .get("username")
         .and_then(|v| v.as_str())
