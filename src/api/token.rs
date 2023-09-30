@@ -35,7 +35,7 @@ use crate::{
     api::{
         admin_login::{LoginConfig, WhoCanSignUp},
         tags::ApiTags,
-        user::UserInfo,
+        user::{UserInfo, TwitterUserInfo},
         DateTime, KickReason,
     },
     create_user::{CreateUser, CreateUserBy, CreateUserError},
@@ -287,6 +287,7 @@ pub enum LoginApiResponse {
     #[oai(status = 410)]
     AccountNotAssociated,
 }
+
 
 /// Bind credential
 #[derive(Debug, Union)]
@@ -1075,20 +1076,58 @@ impl ApiToken {
 
     //twitterAuth
     #[oai(path="/twitterAuth", method="post")]
-    async fn twitter_auth(&self,state:Data<&State>,token:Token,req:Json<TwitterCodeRequest>) ->Result<()>
+    async fn twitter_auth(&self,state:Data<&State>,token:Token,req:Json<TwitterCodeRequest>) ->Result<Json<TwitterUserInfo>>
     {
         let code = &req.code;
+        let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
         // fetch id_token by code
-        let token = twitter_fetch_token(code, &state)
+        let access_token = twitter_fetch_token(code, &state)
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
-        let twitter_userinfo = twitter_fetch_user_info(&token)
+        let twitter_userinfo = twitter_fetch_user_info(&access_token)
         // save twitter_userinfo into db.
         .await
         .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
 
-        todo!("save userinfo to db");
-        Ok(())
+        let twitter_response = Json(twitter_userinfo.clone());
+
+        let uid = token.uid;
+        // update the user has twitter auth.
+        let sql = "update user set auth_twitter=? where uid = ?";
+        sqlx::query(sql)
+            .bind(true)
+            .bind(uid)
+            .execute(&mut tx)
+            .await.map_err(InternalServerError)?;
+
+        //check the user has oauth by twitter
+        let select_twitter_uid_sql ="select twitter_id from twitter_user where twitter_id = ?";
+        match sqlx::query_as::<_, (i64,)>(select_twitter_uid_sql)
+                    .bind(&twitter_userinfo.twitter_id)
+                    .fetch_optional(&state.db_pool)
+                    .await
+                    .map_err(InternalServerError)?
+        {
+            Some(_) => (),
+            // create a new user
+            None => {
+                //create the twitter user.
+                let sql = "insert into twitter_user (uid,twitter_id, username,profile_image_url) values (?,?, ?,?)";
+                sqlx::query(sql)
+                    .bind(uid)
+                    .bind(twitter_userinfo.twitter_id)
+                    .bind(twitter_userinfo.username)
+                    .bind(twitter_userinfo.profile_image_url)
+                    .execute(&state.db_pool)
+                    .await
+                    .map_err(InternalServerError)?;
+            }
+        }
+        tx.commit().await.map_err(InternalServerError)?;
+
+        
+        //update user info
+        Ok(twitter_response)
     }
 
     /// Bind credential
@@ -1574,12 +1613,6 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
     Ok(access_token.to_string())
 }
 
-struct TwitterUserInfo {
-    username: String,
-    id: Option<String>,
-    profile_image_url: Option<String>,
-}
-
 async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
     let client = reqwest::Client::new();
     let res = client
@@ -1601,14 +1634,15 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
     let id = pairs
         .get("id")
         .and_then(|v| v.as_str())
-        .map(ToString::to_string);
+        .map(|v|v.parse::<i64>().unwrap());
     let profile_image_url = pairs
         .get("profile_image_url")
         .and_then(|v| v.as_str())
         .map(ToString::to_string);
     Ok(TwitterUserInfo {
+        uid:0,
         username,
-        id,
+        twitter_id:id,
         profile_image_url,
     })
 }

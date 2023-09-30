@@ -70,6 +70,14 @@ pub struct UserInfo {
     pub create_by: String,
 }
 
+#[derive(Debug, Object,Clone)]
+pub struct TwitterUserInfo {
+    pub uid:i64,
+    pub username: String,
+    pub twitter_id: Option<i64>,
+    pub profile_image_url: Option<String>,
+}
+
 /// Change password request
 #[derive(Debug, Object)]
 struct ChangePasswordRequest {
