@@ -481,7 +481,7 @@ impl ApiUser {
     async fn auth_by_twitter(&self,state:Data<&State>,token: Token)->Result<Json<bool>>{
         let uid = token.uid;
         let db_pool = &state.db_pool;
-        let auth_twitter = sqlx::query_as::<_, (bool,)>("SELECT auth_twitter from user u where uid=1")
+        let auth_twitter = sqlx::query_as::<_, (bool,)>("SELECT auth_twitter from user u where uid=?")
             .bind(uid)
             .fetch_optional(db_pool)
             .await
@@ -504,6 +504,23 @@ impl ApiUser {
         //     Ok(Json(false))
         // }
         
+    }
+
+    /// check user has been finished twitter auth
+    #[oai(path="/twitterUid",method = "get")]
+    async fn twitter_uid(&self,state:Data<&State>,token: Token)->Result<Json<i64>>{
+        let uid = token.uid;
+        let db_pool = &state.db_pool;
+        let auth_twitter = sqlx::query_as::<_, (i64,)>("SELECT twitter_id from twitter_user u where uid=?")
+            .bind(uid)
+            .fetch_optional(db_pool)
+            .await
+            .map_err(InternalServerError)?
+            .map(|(auth_twitter,)| auth_twitter);
+        match auth_twitter {
+            Some(is_auth_twitter)=>Ok(Json(is_auth_twitter)),
+            None=>Ok(Json(0)),
+        }
     }
 
     /// Send register magic link to email
