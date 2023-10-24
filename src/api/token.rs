@@ -310,11 +310,16 @@ struct BindRequest {
     credential: BindCredential,
 }
 
-/// Bind request
+/// twitter auth code
 #[derive(Debug, Object)]
 struct TwitterCodeRequest {
-    /// Credential
     code:  String,
+}
+
+/// twitter auth code
+#[derive(Debug, Object)]
+struct WalletAddressRequest {
+    address:  String,
 }
 
 #[derive(ApiResponse)]
@@ -1102,32 +1107,48 @@ impl ApiToken {
 
         //check the user has oauth by twitter
         let select_twitter_uid_sql ="select twitter_id from twitter_user where twitter_id = ?";
-        match sqlx::query_as::<_, (i64,)>(select_twitter_uid_sql)
+        if let None = sqlx::query_as::<_, (i64,)>(select_twitter_uid_sql)
                     .bind(&twitter_userinfo.twitter_id)
                     .fetch_optional(&state.db_pool)
                     .await
                     .map_err(InternalServerError)?
         {
-            Some(_) => (),
-            // create a new user
-            None => {
-                //create the twitter user.
-                let sql = "insert into twitter_user (uid,twitter_id, username,profile_image_url) values (?,?, ?,?)";
-                sqlx::query(sql)
-                    .bind(uid)
-                    .bind(twitter_userinfo.twitter_id)
-                    .bind(twitter_userinfo.username)
-                    .bind(twitter_userinfo.profile_image_url)
-                    .execute(&state.db_pool)
-                    .await
-                    .map_err(InternalServerError)?;
-            }
+            //create the twitter user.
+            let sql = "insert into twitter_user (uid,twitter_id, username,profile_image_url) values (?,?, ?,?)";
+            sqlx::query(sql)
+                .bind(uid)
+                .bind(twitter_userinfo.twitter_id)
+                .bind(twitter_userinfo.username)
+                .bind(twitter_userinfo.profile_image_url)
+                .execute(&state.db_pool)
+                .await
+                .map_err(InternalServerError)?;
         }
-        tx.commit().await.map_err(InternalServerError)?;
 
+        tx.commit().await.map_err(InternalServerError)?;
         
         //update user info
         Ok(twitter_response)
+    }
+
+    /// Bind wallet
+    #[oai(path = "/bindWallet2User", method = "post", transform = "guest_forbidden")]
+    async fn bind_wallet2_user(
+        &self,
+        state: Data<&State>,
+        token: Token,
+        req: Json<WalletAddressRequest>,
+    ) -> Result<BindApiResponse> {
+        let db_pool = &state.0.db_pool;
+        let address = req.0.address;
+        let uid = token.uid;
+        let sql = "insert into wallet (address,uid) values (?,?)";
+        sqlx::query(sql)
+            .bind(address)
+            .bind(uid)
+            .execute(db_pool)
+            .await.map_err(InternalServerError)?;
+        Ok(BindApiResponse::Ok)
     }
 
     /// Bind credential
