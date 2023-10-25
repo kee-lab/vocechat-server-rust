@@ -3,3 +3,5 @@ CREATE TABLE wallet (
 	address TEXT not null,
 	uid INTEGER not null
 );
+
+CREATE UNIQUE INDEX wallet_uid_IDX ON wallet (uid);
