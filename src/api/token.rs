@@ -30,6 +30,7 @@ use rc_token::{parse_token, TokenType};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, Map};
 use sha2::Sha256;
+use tracing::info;
 
 use crate::{
     api::{
@@ -1087,12 +1088,13 @@ impl ApiToken {
         let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
         // fetch id_token by code
         let access_token = twitter_fetch_token(code, &state)
-        .await
-        .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+            .await
+            .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+
         let twitter_userinfo = twitter_fetch_user_info(&access_token)
-        // save twitter_userinfo into db.
-        .await
-        .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
+            // save twitter_userinfo into db.
+            .await
+            .map_err(|err| poem::Error::from((StatusCode::BAD_REQUEST, err)))?;
 
         let twitter_response = Json(twitter_userinfo.clone());
 
@@ -1104,26 +1106,31 @@ impl ApiToken {
             .bind(uid)
             .execute(&mut tx)
             .await.map_err(InternalServerError)?;
-
+        info!("finished update user set auth_twitter");
         //check the user has oauth by twitter
-        let select_twitter_uid_sql ="select twitter_id from twitter_user where twitter_id = ?";
-        if let None = sqlx::query_as::<_, (i64,)>(select_twitter_uid_sql)
-                    .bind(&twitter_userinfo.twitter_id)
-                    .fetch_optional(&state.db_pool)
-                    .await
-                    .map_err(InternalServerError)?
-        {
+        // let select_twitter_uid_sql ="select twitter_id from twitter_user where twitter_id = ? and uid = ?";
+        // if let None = sqlx::query_as::<_, (i64,)>(select_twitter_uid_sql)
+        //             .bind(&twitter_userinfo.twitter_id)
+        //             .bind(&uid)
+        //             .fetch_optional(&state.db_pool)
+        //             .await
+        //             .map_err(InternalServerError)?
+        // {
             //create the twitter user.
-            let sql = "insert into twitter_user (uid,twitter_id, username,profile_image_url) values (?,?, ?,?)";
+            let now = DateTime::now();
+            let sql = "insert into twitter_user (uid,twitter_id, username,profile_image_url,created_time,updated_time) values (?,?, ?,?,?,?)";
             sqlx::query(sql)
                 .bind(uid)
                 .bind(twitter_userinfo.twitter_id)
                 .bind(twitter_userinfo.username)
                 .bind(twitter_userinfo.profile_image_url)
-                .execute(&state.db_pool)
+                .bind(now)
+                .bind(now)
+                .execute(&mut tx)
                 .await
                 .map_err(InternalServerError)?;
-        }
+            info!("finished insert twitter_user!");
+        // }
 
         tx.commit().await.map_err(InternalServerError)?;
         
@@ -1612,7 +1619,9 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
         ("code_verifier", "challenge".to_string()),
         ("redirect_uri", "http://127.0.0.1:3009/twitter/cb/webapp.html".to_string()),
     ]; // , ("redirect_uri", "")
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .proxy(reqwest::Proxy::all("http://127.0.0.1:10080")?)
+        .build()?;
     let res = client
         .post("https://api.twitter.com/2/oauth2/token")
         .header("User-Agent", "keebee")

@@ -23,6 +23,7 @@ use tokio::{
     },
     time::{Duration, Instant},
 };
+use tracing::info;
 
 use crate::{
     api::{
@@ -508,8 +509,9 @@ impl ApiUser {
 
     /// check user has been finished twitter auth
     #[oai(path="/twitterUid",method = "get")]
-    async fn twitter_uid(&self,state:Data<&State>,token: Token)->Result<Json<i64>>{
+    async fn twitter_uid(&self,state:Data<&State>,token: Token)->Result<Json<String>>{
         let uid = token.uid;
+        info!(uid = uid,"log the uid");
         let db_pool = &state.db_pool;
         let auth_twitter = sqlx::query_as::<_, (i64,)>("SELECT twitter_id from twitter_user u where uid=?")
             .bind(uid)
@@ -517,9 +519,10 @@ impl ApiUser {
             .await
             .map_err(InternalServerError)?
             .map(|(auth_twitter,)| auth_twitter);
+        tracing::info!(twitter_uid = auth_twitter, "twitter uid is.");
         match auth_twitter {
-            Some(is_auth_twitter)=>Ok(Json(is_auth_twitter)),
-            None=>Ok(Json(0)),
+            Some(auth_twitter)=>Ok(Json(auth_twitter.to_string())),
+            None=>Ok(Json(0.to_string())),
         }
     }
 
