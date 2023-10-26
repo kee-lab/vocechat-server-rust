@@ -32,12 +32,14 @@ use serde_json::{Value, Map};
 use sha2::Sha256;
 use tracing::info;
 
+static PROXY_URL:&'static str = "http://127.0.0.1:10080";
+
 use crate::{
     api::{
         admin_login::{LoginConfig, WhoCanSignUp},
         tags::ApiTags,
         user::{UserInfo, TwitterUserInfo},
-        DateTime, KickReason,
+        DateTime, KickReason, client::get_client,
     },
     create_user::{CreateUser, CreateUserBy, CreateUserError},
     middleware::guest_forbidden,
@@ -1619,9 +1621,7 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
         ("code_verifier", "challenge".to_string()),
         ("redirect_uri", "http://127.0.0.1:3009/twitter/cb/webapp.html".to_string()),
     ]; // , ("redirect_uri", "")
-    let client = reqwest::Client::builder()
-        .proxy(reqwest::Proxy::all("http://127.0.0.1:10080")?)
-        .build()?;
+    let client = get_client(Some(PROXY_URL))?;
     let res = client
         .post("https://api.twitter.com/2/oauth2/token")
         .header("User-Agent", "keebee")
@@ -1644,7 +1644,7 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
 }
 
 async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
-    let client = reqwest::Client::new();
+    let client = get_client(Some(PROXY_URL))?;;
     let res = client
         .get("https://api.twitter.com/2/users/me?user.fields=created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,url,username,verified,withheld")
         .header("User-Agent", "keebee")

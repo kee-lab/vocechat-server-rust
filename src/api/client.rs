@@ -1,6 +1,11 @@
-pub fn get_client(proxy:Option<String>)->Client{
-    
-    let client = reqwest::Client::builder()
-        .proxy(reqwest::Proxy::all("http://127.0.0.1:10080")?)
-        .build()?;
+use reqwest::Client;
+
+pub fn get_client(proxy: Option<&str>) -> anyhow::Result<Client> {
+    let client = match proxy {
+        Some(proxy_url) => reqwest::Client::builder()
+            .proxy(reqwest::Proxy::all(proxy_url)?)
+            .build()?,
+        None => reqwest::Client::builder().build()?,
+    };
+    return Ok(client);
 }
