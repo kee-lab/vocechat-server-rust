@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
 use futures_util::{stream::BoxStream, StreamExt};
 use itertools::Itertools;
@@ -71,12 +71,14 @@ pub struct UserInfo {
     pub create_by: String,
 }
 
-#[derive(Debug, Object,Clone)]
+#[derive(Debug, Object, Clone)]
 pub struct TwitterUserInfo {
-    pub uid:i64,
+    pub uid: i64,
     pub username: String,
     pub twitter_id: Option<i64>,
     pub profile_image_url: Option<String>,
+    pub created_time: Option<DateTime>,
+    pub updated_time: Option<DateTime>,
 }
 
 /// Change password request
@@ -477,22 +479,48 @@ impl ApiUser {
         Ok(Json(cache.check_email_conflict(&email)))
     }
 
-    /// check user has been finished twitter auth
-    #[oai(path="/authByTwitter",method = "get", transform = "guest_forbidden")]
-    async fn auth_by_twitter(&self,state:Data<&State>,token: Token)->Result<Json<bool>>{
+    // check the wallet of user is exist.
+    #[oai(path = "/checkWalletExist", method = "get")]
+    async fn check_wallet_exist(
+        &self,
+        state: Data<&State>,
+        token: Token,
+        wallet_address: Query<String>,
+    ) -> Result<Json<bool>> {
         let uid = token.uid;
+        let wallet_address = wallet_address.0;
         let db_pool = &state.db_pool;
-        let auth_twitter = sqlx::query_as::<_, (bool,)>("SELECT auth_twitter from user u where uid=?")
+        let sql = "select address from wallet where uid = ? and address = ?";
+        let wallet_address = sqlx::query_as::<_, (String,)>(sql)
             .bind(uid)
+            .bind(wallet_address)
             .fetch_optional(db_pool)
             .await
-            .map_err(InternalServerError)?
-            .map(|(auth_twitter,)| auth_twitter);
-        match auth_twitter {
-            Some(is_auth_twitter)=>Ok(Json(is_auth_twitter)),
-            None=>Ok(Json(false)),
+            .map_err(InternalServerError)?;
+        if let Some(_) = wallet_address {
+            Ok(Json(true))
+        } else {
+            Ok(Json(false))
         }
-    // let cache = state.cache.read().await;
+    }
+
+    /// check user has been finished twitter auth
+    #[oai(path = "/authByTwitter", method = "get", transform = "guest_forbidden")]
+    async fn auth_by_twitter(&self, state: Data<&State>, token: Token) -> Result<Json<bool>> {
+        let uid = token.uid;
+        let db_pool = &state.db_pool;
+        let auth_twitter =
+            sqlx::query_as::<_, (bool,)>("SELECT auth_twitter from user u where uid=?")
+                .bind(uid)
+                .fetch_optional(db_pool)
+                .await
+                .map_err(InternalServerError)?
+                .map(|(auth_twitter,)| auth_twitter);
+        match auth_twitter {
+            Some(is_auth_twitter) => Ok(Json(is_auth_twitter)),
+            None => Ok(Json(false)),
+        }
+        // let cache = state.cache.read().await;
         // let user_id = token.uid;
         // let user = cache.users.get(&user_id);
         // if let Some(user)  = user{
@@ -504,25 +532,25 @@ impl ApiUser {
         // }else{
         //     Ok(Json(false))
         // }
-        
     }
 
     /// check user has been finished twitter auth
-    #[oai(path="/twitterUid",method = "get")]
-    async fn twitter_uid(&self,state:Data<&State>,token: Token)->Result<Json<String>>{
+    #[oai(path = "/twitterUid", method = "get")]
+    async fn twitter_uid(&self, state: Data<&State>, token: Token) -> Result<Json<String>> {
         let uid = token.uid;
-        info!(uid = uid,"log the uid");
+        info!(uid = uid, "log the uid");
         let db_pool = &state.db_pool;
-        let auth_twitter = sqlx::query_as::<_, (i64,)>("SELECT twitter_id from twitter_user u where uid=?")
-            .bind(uid)
-            .fetch_optional(db_pool)
-            .await
-            .map_err(InternalServerError)?
-            .map(|(auth_twitter,)| auth_twitter);
+        let auth_twitter =
+            sqlx::query_as::<_, (i64,)>("SELECT twitter_id from twitter_user u where uid=?")
+                .bind(uid)
+                .fetch_optional(db_pool)
+                .await
+                .map_err(InternalServerError)?
+                .map(|(auth_twitter,)| auth_twitter);
         tracing::info!(twitter_uid = auth_twitter, "twitter uid is.");
         match auth_twitter {
-            Some(auth_twitter)=>Ok(Json(auth_twitter.to_string())),
-            None=>Ok(Json(0.to_string())),
+            Some(auth_twitter) => Ok(Json(auth_twitter.to_string())),
+            None => Ok(Json(0.to_string())),
         }
     }
 
@@ -960,6 +988,32 @@ impl ApiUser {
                 .map(|(id, user)| user.api_user_info(*id))
                 .collect(),
         )
+    }
+
+    /// Get new twitter user info
+    #[oai(path = "/newTwitterInfo", method = "get")]
+    async fn get_new_twitter_info(&self, state: Data<&State>) -> Json<Vec<TwitterUserInfo>> {
+        let db_pool = state.0.db_pool;
+        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time from twitter_user order by twitter_user DESC";
+        let mut stream = sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime)>(sql)
+            .fetch(&db_pool);
+        let twitter_users: Vec<TwitterUserInfo> = Vec::new();
+        
+        while let Some(res) = stream.next().await {
+            let (uid, twitter_id, username, profile_image_url, created_time, updated_time) =
+                res.map_err(InternalServerError)?;
+
+            let twitter_user_info = TwitterUserInfo {
+                uid,
+                username,
+                twitter_id: Some(twitter_id),
+                profile_image_url: Some(profile_image_url),
+                created_time: Some(created_time),
+                updated_time: Some(updated_time),
+            };
+            twitter_users.push(twitter_user_info);
+        }
+        return Json(twitter_users);
     }
 
     /// Send message to the specified user
