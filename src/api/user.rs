@@ -993,15 +993,15 @@ impl ApiUser {
     /// Get new twitter user info
     #[oai(path = "/newTwitterInfo", method = "get")]
     async fn get_new_twitter_info(&self, state: Data<&State>) -> Json<Vec<TwitterUserInfo>> {
-        let db_pool = state.0.db_pool;
-        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time from twitter_user order by twitter_user DESC";
-        let mut stream = sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime)>(sql)
-            .fetch(&db_pool);
-        let twitter_users: Vec<TwitterUserInfo> = Vec::new();
-        
+        let db_pool = &state.db_pool;
+        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time from twitter_user order by created_time DESC";
+        let mut stream =
+            sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime)>(sql).fetch(db_pool);
+        let mut twitter_users: Vec<TwitterUserInfo> = Vec::new();
+
         while let Some(res) = stream.next().await {
             let (uid, twitter_id, username, profile_image_url, created_time, updated_time) =
-                res.map_err(InternalServerError)?;
+                res.map_err(InternalServerError).unwrap();
 
             let twitter_user_info = TwitterUserInfo {
                 uid,
