@@ -1664,7 +1664,7 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
     let id = pairs
         .get("id")
         .and_then(|v| v.as_str())
-        .map(|v|v.parse::<i64>().unwrap());
+        .unwrap();
     let profile_image_url = pairs
         .get("profile_image_url")
         .and_then(|v| v.as_str())
@@ -1672,7 +1672,7 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
     Ok(TwitterUserInfo {
         uid:0,
         username,
-        twitter_id:id,
+        twitter_id:id.to_string(),
         profile_image_url,
         created_time: None,
         updated_time: None,

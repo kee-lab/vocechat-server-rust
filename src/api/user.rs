@@ -75,7 +75,7 @@ pub struct UserInfo {
 pub struct TwitterUserInfo {
     pub uid: i64,
     pub username: String,
-    pub twitter_id: Option<i64>,
+    pub twitter_id: String,
     pub profile_image_url: Option<String>,
     pub created_time: Option<DateTime>,
     pub updated_time: Option<DateTime>,
@@ -1000,13 +1000,13 @@ impl ApiUser {
         let mut twitter_users: Vec<TwitterUserInfo> = Vec::new();
 
         while let Some(res) = stream.next().await {
-            let (uid, twitter_id, username, profile_image_url, created_time, updated_time) =
+            let (uid, twi_id, username, profile_image_url, created_time, updated_time) =
                 res.map_err(InternalServerError).unwrap();
 
             let twitter_user_info = TwitterUserInfo {
                 uid,
                 username,
-                twitter_id: Some(twitter_id),
+                twitter_id:twi_id.to_string(),
                 profile_image_url: Some(profile_image_url),
                 created_time: Some(created_time),
                 updated_time: Some(updated_time),
