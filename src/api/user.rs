@@ -490,6 +490,7 @@ impl ApiUser {
         let uid = token.uid;
         let wallet_address = wallet_address.0;
         let db_pool = &state.db_pool;
+        info!(uid=uid,address=wallet_address,"debug check walletExist!");
         let sql = "select address from wallet where uid = ? and address = ?";
         let wallet_address = sqlx::query_as::<_, (String,)>(sql)
             .bind(uid)
