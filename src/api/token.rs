@@ -32,7 +32,7 @@ use serde_json::{Value, Map};
 use sha2::Sha256;
 use tracing::info;
 
-static PROXY_URL:&'static str = "http://127.0.0.1:10080";
+static PROXY_URL:&'static str = "http://127.0.0.1:7890";
 
 use crate::{
     api::{

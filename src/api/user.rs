@@ -79,6 +79,7 @@ pub struct TwitterUserInfo {
     pub profile_image_url: Option<String>,
     pub created_time: Option<DateTime>,
     pub updated_time: Option<DateTime>,
+    pub price:u128,
 }
 
 /// Change password request
