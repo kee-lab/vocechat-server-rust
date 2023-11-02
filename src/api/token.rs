@@ -1676,6 +1676,7 @@ async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo>
         profile_image_url,
         created_time: None,
         updated_time: None,
+        share_supply: 0,
     })
 }
 
