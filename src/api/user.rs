@@ -79,6 +79,7 @@ pub struct TwitterUserInfo {
     pub profile_image_url: Option<String>,
     pub created_time: Option<DateTime>,
     pub updated_time: Option<DateTime>,
+    pub share_supply: i64,
 }
 
 /// Change password request
@@ -995,13 +996,13 @@ impl ApiUser {
     #[oai(path = "/newTwitterInfo", method = "get")]
     async fn get_new_twitter_info(&self, state: Data<&State>) -> Json<Vec<TwitterUserInfo>> {
         let db_pool = &state.db_pool;
-        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time from twitter_user order by created_time DESC";
+        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time,share_supply from twitter_user order by created_time DESC";
         let mut stream =
-            sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime)>(sql).fetch(db_pool);
+            sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime,i64)>(sql).fetch(db_pool);
         let mut twitter_users: Vec<TwitterUserInfo> = Vec::new();
 
         while let Some(res) = stream.next().await {
-            let (uid, twi_id, username, profile_image_url, created_time, updated_time) =
+            let (uid, twi_id, username, profile_image_url, created_time, updated_time,share_supply) =
                 res.map_err(InternalServerError).unwrap();
 
             let twitter_user_info = TwitterUserInfo {
@@ -1011,6 +1012,7 @@ impl ApiUser {
                 profile_image_url: Some(profile_image_url),
                 created_time: Some(created_time),
                 updated_time: Some(updated_time),
+                share_supply,
             };
             twitter_users.push(twitter_user_info);
         }
