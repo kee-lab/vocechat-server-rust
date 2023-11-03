@@ -1,6 +1,6 @@
 const ETH1: u128 = 10u128.pow(18);
 
-pub fn get_price(supply: u128, amount: u128) -> u128 {
+pub fn get_price(supply: u128, amount: u128) -> usize {
     let sum1 = if supply == 0 {
         0
     } else {
@@ -12,7 +12,7 @@ pub fn get_price(supply: u128, amount: u128) -> u128 {
         (supply - 1 + amount) * (supply + amount) * (2 * (supply - 1 + amount) + 1) / 6
     };
     let summation = sum2 - sum1;
-    return summation * ETH1 / 16000u128;
+    return (summation * ETH1 / 16000u128).try_into().unwrap();
 }
 
 #[cfg(test)]

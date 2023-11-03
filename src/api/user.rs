@@ -50,6 +50,8 @@ use crate::{
     SqlitePool, State,
 };
 
+use super::share;
+
 const MAX_NEWEST_MESSAGES: usize = 5000;
 
 /// User info
@@ -79,7 +81,7 @@ pub struct TwitterUserInfo {
     pub profile_image_url: Option<String>,
     pub created_time: Option<DateTime>,
     pub updated_time: Option<DateTime>,
-    pub price:u128,
+    pub price:usize,
     pub share_supply: i64,
 }
 
@@ -1005,7 +1007,7 @@ impl ApiUser {
         while let Some(res) = stream.next().await {
             let (uid, twi_id, username, profile_image_url, created_time, updated_time,share_supply) =
                 res.map_err(InternalServerError).unwrap();
-
+            let price = share::get_price(share_supply.try_into().unwrap(),1);
             let twitter_user_info = TwitterUserInfo {
                 uid,
                 username,
@@ -1014,6 +1016,7 @@ impl ApiUser {
                 created_time: Some(created_time),
                 updated_time: Some(updated_time),
                 share_supply,
+                price,
             };
             twitter_users.push(twitter_user_info);
         }
