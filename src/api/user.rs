@@ -1,4 +1,4 @@
-use std::{sync::Arc, vec};
+use std::{sync::Arc, vec, ops::Deref};
 
 use futures_util::{stream::BoxStream, StreamExt};
 use itertools::Itertools;
@@ -6,7 +6,7 @@ use poem::{
     error::{InternalServerError, ReadBodyError},
     http::StatusCode,
     web::Data,
-    Body, Error, Request, Result,
+    Body, Error, Request, Result, endpoint::CatchError,
 };
 use poem_openapi::{
     param::{Header, Path, Query},
@@ -44,7 +44,7 @@ use crate::{
         UserSettingsChangedMessage, UserSettingsMessage, UserStateChangedMessage, UserUpdateLog,
         UsersUpdateLogMessage,
     },
-    create_user::{CreateUser, CreateUserBy, CreateUserError},
+    create_user::{CreateUser, CreateUserBy, CreateUserError, WalletError},
     middleware::guest_forbidden,
     state::{BroadcastEvent, Cache, CacheDevice, CacheUser, UserEvent},
     SqlitePool, State,
@@ -509,6 +509,30 @@ impl ApiUser {
         }
     }
 
+    // check the wallet of user is exist.
+    #[oai(path = "/getWalletByUid", method = "get")]
+    async fn get_wallet_by_uid(
+        &self,
+        state: Data<&State>,
+        uid: Query<i64>,
+    ) -> Result<Json<String>> {
+        let uid = (&uid).deref();
+        let db_pool = &state.db_pool;
+        info!(uid=uid,"debug check getWalletByUid!");
+        let sql = "select address from wallet where uid = ?";
+        let wallet_address = sqlx::query_as::<_, (String,)>(sql)
+            .bind(uid)
+            .fetch_optional(db_pool)
+            .await
+            .map_err(InternalServerError)?
+            .map(|(address,)|address);
+        if let Some(address) = wallet_address {
+            Ok(Json(address))
+        } else {
+            Ok(Json("".to_string()))
+        }
+    }
+
     /// check user has been finished twitter auth
     #[oai(path = "/authByTwitter", method = "get", transform = "guest_forbidden")]
     async fn auth_by_twitter(&self, state: Data<&State>, token: Token) -> Result<Json<bool>> {
@@ -540,8 +564,8 @@ impl ApiUser {
     }
 
     /// check user has been finished twitter auth
-    #[oai(path = "/twitterUid", method = "get")]
-    async fn twitter_uid(&self, state: Data<&State>, token: Token) -> Result<Json<String>> {
+    #[oai(path = "/getTwitterIdSelf", method = "get")]
+    async fn get_twitter_id_self(&self, state: Data<&State>, token: Token) -> Result<Json<String>> {
         let uid = token.uid;
         info!(uid = uid, "log the uid");
         let db_pool = &state.db_pool;
@@ -996,8 +1020,8 @@ impl ApiUser {
     }
 
     /// Get new twitter user info
-    #[oai(path = "/newTwitterInfo", method = "get")]
-    async fn get_new_twitter_info(&self, state: Data<&State>) -> Json<Vec<TwitterUserInfo>> {
+    #[oai(path = "/getTwitterListLast", method = "get")]
+    async fn get_twitter_list_lasted(&self, state: Data<&State>) -> Json<Vec<TwitterUserInfo>> {
         let db_pool = &state.db_pool;
         let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time,share_supply from twitter_user order by created_time DESC";
         let mut stream =
