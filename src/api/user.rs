@@ -44,7 +44,7 @@ use crate::{
         UserSettingsChangedMessage, UserSettingsMessage, UserStateChangedMessage, UserUpdateLog,
         UsersUpdateLogMessage,
     },
-    create_user::{CreateUser, CreateUserBy, CreateUserError, WalletError},
+    create_user::{CreateUser, CreateUserBy, CreateUserError},
     middleware::guest_forbidden,
     state::{BroadcastEvent, Cache, CacheDevice, CacheUser, UserEvent},
     SqlitePool, State,
@@ -510,13 +510,13 @@ impl ApiUser {
     }
 
     // check the wallet of user is exist.
-    #[oai(path = "/getWalletByUid", method = "get")]
+    #[oai(path = "/getWalletByUid/:uid", method = "get")]
     async fn get_wallet_by_uid(
         &self,
         state: Data<&State>,
-        uid: Query<i64>,
+        uid: Path<i64>,
     ) -> Result<Json<String>> {
-        let uid = (&uid).deref();
+        let uid = uid.0;
         let db_pool = &state.db_pool;
         info!(uid=uid,"debug check getWalletByUid!");
         let sql = "select address from wallet where uid = ?";
