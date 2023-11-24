@@ -4,6 +4,7 @@ use bytes::Bytes;
 use chrono::Utc;
 use futures_util::TryFutureExt;
 use hmac::{Mac, NewMac};
+use once_cell::sync::Lazy;
 use openidconnect::{
     core::{
         CoreAuthenticationFlow, CoreClient, CoreClientRegistrationRequest, CoreIdTokenClaims,
@@ -31,8 +32,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Value, Map};
 use sha2::Sha256;
 use tracing::info;
+// lazy_static::lazy!{
+//     static PROXY_URL:String = std::env::var("PROXY").expect("env not set the PROXY!");
+// }
 
-static PROXY_URL:&'static str = "http://127.0.0.1:7890";
+pub static PROXY_URL: Lazy<String> = Lazy::new(|| std::env::var("PROXY").expect("env not set the PROXY!"));
+
 
 use crate::{
     api::{
@@ -1621,7 +1626,7 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
         ("code_verifier", "challenge".to_string()),
         ("redirect_uri", "http://127.0.0.1:3009/twitter/cb/webapp.html".to_string()),
     ]; // , ("redirect_uri", "")
-    let client = get_client(Some(PROXY_URL))?;
+    let client = get_client(Some(&PROXY_URL))?;
     let res = client
         .post("https://api.twitter.com/2/oauth2/token")
         .header("User-Agent", "keebee")
@@ -1644,7 +1649,7 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
 }
 
 async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
-    let client = get_client(Some(PROXY_URL))?;;
+    let client = get_client(Some(&PROXY_URL))?;
     let res = client
         .get("https://api.twitter.com/2/users/me?user.fields=created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,url,username,verified,withheld")
         .header("User-Agent", "keebee")
