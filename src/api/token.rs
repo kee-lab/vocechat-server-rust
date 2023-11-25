@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref, time::Duration, string};
+use std::{collections::HashMap, ops::Deref, time::Duration, string, env::VarError};
 
 use bytes::Bytes;
 use chrono::Utc;
@@ -36,7 +36,7 @@ use tracing::info;
 //     static PROXY_URL:String = std::env::var("PROXY").expect("env not set the PROXY!");
 // }
 
-pub static PROXY_URL: Lazy<String> = Lazy::new(|| std::env::var("PROXY").expect("env not set the PROXY!"));
+pub static PROXY_URL: Lazy<Result<String,VarError>> = Lazy::new(|| std::env::var("PROXY"));
 
 
 use crate::{
@@ -1626,7 +1626,12 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
         ("code_verifier", "challenge".to_string()),
         ("redirect_uri", "http://127.0.0.1:3009/twitter/cb/webapp.html".to_string()),
     ]; // , ("redirect_uri", "")
-    let client = get_client(Some(&PROXY_URL))?;
+    let client = if PROXY_URL.is_ok(){
+            get_client(Some(PROXY_URL.as_ref().unwrap()))?
+        }
+        else{
+            get_client(None)?
+    };
     let res = client
         .post("https://api.twitter.com/2/oauth2/token")
         .header("User-Agent", "keebee")
@@ -1649,7 +1654,12 @@ async fn twitter_fetch_token(code: &str, state: &State) -> anyhow::Result<String
 }
 
 async fn twitter_fetch_user_info(token: &str) -> anyhow::Result<TwitterUserInfo> {
-    let client = get_client(Some(&PROXY_URL))?;
+    let client = if PROXY_URL.is_ok(){
+        get_client(Some(PROXY_URL.as_ref().unwrap()))?
+    }
+    else{
+        get_client(None)?
+    };
     let res = client
         .get("https://api.twitter.com/2/users/me?user.fields=created_at,description,entities,id,location,name,pinned_tweet_id,profile_image_url,protected,url,username,verified,withheld")
         .header("User-Agent", "keebee")
