@@ -87,7 +87,7 @@ impl CacheGroup {
             name: self.name.clone(),
             description: self.description_opt(),
             members: self.members.iter().copied().collect(),
-            // is_public: self.ty.is_public(),
+            is_public: self.ty.is_public(),
             avatar_updated_at: self.avatar_updated_at,
             pinned_messages: self.pinned_messages.clone(),
         }
