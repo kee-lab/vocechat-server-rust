@@ -708,6 +708,7 @@ impl ApiGroup {
     }
 
     /// Add some new members to the specified group
+    /// TODO check the user have the owner's share.
     #[oai(path = "/:gid/members/add", method = "post")]
     async fn add_members(
         &self,
