@@ -708,7 +708,7 @@ impl ApiGroup {
     }
 
     /// Add some new members to the specified group
-    /// TODO check the user have the owner's share.
+    // TODO check the user have the owner's share.
     #[oai(path = "/:gid/members/add", method = "post")]
     async fn add_members(
         &self,
@@ -718,6 +718,9 @@ impl ApiGroup {
         members: Json<Vec<i64>>,
     ) -> Result<()> {
         let mut cache = state.cache.write().await;
+
+        // to check the user has the share of owner.
+        
 
         if !members.iter().all(|uid| cache.users.contains_key(uid)) {
             // invalid uid
