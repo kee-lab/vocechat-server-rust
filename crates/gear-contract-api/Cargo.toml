@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+gclient = { git = "https://github.com/gear-tech/gear.git" }
+tokio = { version = "1.23.0", features = ["full"] }
 
 [dev-dependencies]
 gclient = { git = "https://github.com/gear-tech/gear.git" }
