@@ -702,7 +702,7 @@ checksum = "ca548b6163b872067dc5eb82fd130c56881435e30367d2073594a3d9744120dd"
 dependencies = [
  "log",
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
 ]
 
@@ -1947,7 +1947,7 @@ checksum = "878babb0b136e731cc77ec2fd883ff02745ff21e6fb662729953d44923df009c"
 dependencies = [
  "cfg-if",
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
 ]
 
 [[package]]
@@ -1958,7 +1958,7 @@ checksum = "87cf1549fba25a6fcac22785b61698317d958e96cac72a59102ea45b9ae64692"
 dependencies = [
  "cfg-if",
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
 ]
 
@@ -2184,6 +2184,9 @@ version = "0.1.0"
 dependencies = [
  "gclient",
  "gear-core",
+ "parity-scale-codec 3.6.5",
+ "primitive-types 0.10.1",
+ "scale-info 2.10.0",
  "tokio",
 ]
 
@@ -2205,7 +2208,7 @@ dependencies = [
  "num-traits",
  "parity-scale-codec 3.6.5",
  "paste",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "static_assertions",
  "wasmparser-nostd",
@@ -2218,7 +2221,7 @@ source = "git+https://github.com/gear-tech/gear.git#621a0124110b9481f40e463cd7e4
 dependencies = [
  "derive_more",
  "enum-iterator",
- "scale-info",
+ "scale-info 2.10.0",
 ]
 
 [[package]]
@@ -4571,6 +4574,7 @@ dependencies = [
  "impl-codec 0.5.1",
  "impl-rlp",
  "impl-serde 0.3.2",
+ "scale-info 1.0.0",
  "uint",
 ]
 
@@ -4583,7 +4587,7 @@ dependencies = [
  "fixed-hash 0.8.0",
  "impl-codec 0.6.0",
  "impl-serde 0.4.0",
- "scale-info",
+ "scale-info 2.10.0",
  "uint",
 ]
 
@@ -5423,7 +5427,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "036575c29af9b6e4866ffb7fa055dbf623fe7a9cc159b33786de6013a6969d89"
 dependencies = [
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
 ]
 
@@ -5438,7 +5442,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "scale-bits",
  "scale-decode-derive",
- "scale-info",
+ "scale-info 2.10.0",
  "smallvec",
 ]
 
@@ -5466,7 +5470,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "scale-bits",
  "scale-encode-derive",
- "scale-info",
+ "scale-info 2.10.0",
  "smallvec",
 ]
 
@@ -5485,6 +5489,18 @@ dependencies = [
 
 [[package]]
 name = "scale-info"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c55b744399c25532d63a0d2789b109df8d46fc93752d46b0782991a931a782f"
+dependencies = [
+ "cfg-if",
+ "derive_more",
+ "parity-scale-codec 2.3.1",
+ "scale-info-derive 1.0.0",
+]
+
+[[package]]
+name = "scale-info"
 version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f7d66a1128282b7ef025a8ead62a4a9fcf017382ec53b8ffbf4d7bf77bd3c60"
@@ -5493,8 +5509,20 @@ dependencies = [
  "cfg-if",
  "derive_more",
  "parity-scale-codec 3.6.5",
- "scale-info-derive",
+ "scale-info-derive 2.10.0",
  "serde",
+]
+
+[[package]]
+name = "scale-info-derive"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "baeb2780690380592f86205aa4ee49815feb2acad8c2f59e6dd207148c3f1fcd"
+dependencies = [
+ "proc-macro-crate 1.3.1",
+ "proc-macro2 1.0.70",
+ "quote 1.0.33",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5524,7 +5552,7 @@ dependencies = [
  "scale-bits",
  "scale-decode",
  "scale-encode",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "yap",
 ]
@@ -6148,7 +6176,7 @@ version = "7.0.0"
 source = "git+https://github.com/gear-tech/substrate.git?branch=gear-polkadot-v0.9.41-canary-no-sandbox-revert-oom-changes#27779e0eaaa2161ba165ff8f0b0ff103bb63e5a1"
 dependencies = [
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "sp-core",
  "sp-io",
@@ -6163,7 +6191,7 @@ dependencies = [
  "integer-sqrt",
  "num-traits",
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "sp-std 5.0.0",
  "static_assertions",
@@ -6194,7 +6222,7 @@ dependencies = [
  "primitive-types 0.12.2",
  "rand 0.8.5",
  "regex",
- "scale-info",
+ "scale-info 2.10.0",
  "schnorrkel 0.9.1",
  "secp256k1 0.24.3",
  "secrecy",
@@ -6326,7 +6354,7 @@ dependencies = [
  "parity-scale-codec 3.6.5",
  "paste",
  "rand 0.8.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "sp-application-crypto",
  "sp-arithmetic",
@@ -6435,7 +6463,7 @@ dependencies = [
  "nohash-hasher",
  "parity-scale-codec 3.6.5",
  "parking_lot 0.12.1",
- "scale-info",
+ "scale-info 2.10.0",
  "schnellru",
  "sp-core",
  "sp-std 5.0.0",
@@ -6476,7 +6504,7 @@ version = "4.0.0"
 source = "git+https://github.com/gear-tech/substrate.git?branch=gear-polkadot-v0.9.41-canary-no-sandbox-revert-oom-changes#27779e0eaaa2161ba165ff8f0b0ff103bb63e5a1"
 dependencies = [
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "serde",
  "smallvec",
  "sp-arithmetic",
@@ -6755,7 +6783,7 @@ dependencies = [
  "scale-bits",
  "scale-decode",
  "scale-encode",
- "scale-info",
+ "scale-info 2.10.0",
  "scale-value",
  "serde",
  "serde_json",
@@ -6780,7 +6808,7 @@ dependencies = [
  "parity-scale-codec 3.6.5",
  "proc-macro2 1.0.70",
  "quote 1.0.33",
- "scale-info",
+ "scale-info 2.10.0",
  "subxt-metadata",
  "syn 2.0.39",
  "thiserror",
@@ -6824,7 +6852,7 @@ checksum = "b6898275765d36a37e5ef564358e0341cf41b5f3a91683d7d8b859381b65ac8a"
 dependencies = [
  "frame-metadata 16.0.0",
  "parity-scale-codec 3.6.5",
- "scale-info",
+ "scale-info 2.10.0",
  "sp-core-hashing 9.0.0",
  "thiserror",
 ]
