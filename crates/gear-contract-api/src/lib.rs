@@ -7,7 +7,6 @@ const WASM_PATH: &str = "./target/wasm32-unknown-unknown/release/gear_friend_sha
 
 pub async fn user_have_subject_share() -> Result<()> {
     // Create API instance
-    let api = GearApi::dev().await?;
     let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
 
     // Subscribe to events
@@ -20,7 +19,7 @@ pub async fn user_have_subject_share() -> Result<()> {
     let bytes = hex_to_bytes(&hex_value[2..]);
     let program_id:ProgramId = ProgramId::from(bytes.as_slice());
 
-    let payload = b"{ subject:0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a, user:0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a}".to_vec();
+    let payload = br#"{ subject:"0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a", user:"0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a"}"#.to_vec();
 
     // Send the PING message
     let share_state:StateReply = api.read_state(program_id, payload).await.expect("read share error!");
