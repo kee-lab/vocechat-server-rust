@@ -2183,6 +2183,7 @@ name = "gear-contract-api"
 version = "0.1.0"
 dependencies = [
  "gclient",
+ "gear-core",
  "tokio",
 ]
 
