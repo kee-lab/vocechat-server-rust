@@ -8,6 +8,10 @@ async fn create(
 ) -> Result<Json<CreateGroupResponse>> {
     let mut cache = state.cache.write().await;
 
+    if req.members.len() > 0{
+        return Err(Error::from_status(StatusCode::BAD_REQUEST));
+    } 
+
     if req.is_public && !token.is_admin {
         // only admin can create public groups
         return Err(Error::from_status(StatusCode::FORBIDDEN));
@@ -28,12 +32,12 @@ async fn create(
         Default::default()
     };
 
-    for uid in &members {
-        if !cache.users.contains_key(uid) {
-            // invalid uid
-            return Err(Error::from_status(StatusCode::BAD_REQUEST));
-        }
-    }
+    // for uid in &members {
+    //     if !cache.users.contains_key(uid) {
+    //         // invalid uid
+    //         return Err(Error::from_status(StatusCode::BAD_REQUEST));
+    //     }
+    // }
 
     // insert to sqlite
     let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
