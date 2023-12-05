@@ -1,11 +1,13 @@
 use gclient::{GearApi, Result, WSAddress, EventProcessor};
 use gear_core::ids::ProgramId;
-use parity_scale_codec::{Encode, Decode};
-use scale_info::TypeInfo;
+use gstd::ActorId;
+use kee_bee_io::{StateReply, StateQuery};
+use parity_scale_codec::{Encode};
 
 const WASM_PATH: &str = "./target/wasm32-unknown-unknown/release/gear_friend_share.opt.wasm";
+const CONTRACT_ADDRESS:&str = "0x1371d9c044ff3f249eb6a647c4807ed5e4f07ef98ea62a7043e9546b547503e5";
 
-pub async fn user_have_subject_share() -> Result<()> {
+pub async fn user_have_subject_share(subject:&str,user:&str) -> Result<bool> {
     // Create API instance
     let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
 
@@ -15,23 +17,25 @@ pub async fn user_have_subject_share() -> Result<()> {
     // Check that blocks are still running
     assert!(listener.blocks_running().await?);
 
-    let hex_value = "0x1371d9c044ff3f249eb6a647c4807ed5e4f07ef98ea62a7043e9546b547503e5";
-    let bytes = hex_to_bytes(&hex_value[2..]);
+    let bytes = hex_to_bytes(&CONTRACT_ADDRESS[2..]);
     let program_id:ProgramId = ProgramId::from(bytes.as_slice());
 
-    let payload = br#"{ subject:"0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a", user:"0xec59e48cf877dfab6e6ba04b24d29349f11cf0bcfa44d04d7b875397225a1b2a"}"#.to_vec();
+    let subject:ActorId = ActorId::from_slice(hex_to_bytes(&subject[2..]).as_slice()).expect("get subject error!");
+    let user:ActorId = ActorId::from_slice(hex_to_bytes(&user[2..]).as_slice()).expect("get user error!");
+    
+    let payload = StateQuery::SubjectShareUser{subject,user}.encode();
+
 
     // Send the PING message
     let share_state:StateReply = api.read_state(program_id, payload).await.expect("read share error!");
     println!("share_state is:{:?}",share_state);
+    if let StateReply::ShareAmount(amount) = share_state{
+        if amount>0 {
+            return Ok(true);
+        }
+    }
 
-    Ok(())
-}
-
-#[derive(Debug,Encode, Decode, TypeInfo)]
-pub enum StateReply {
-    Price(u128),
-    ShareAmount(u128),
+    return Ok(false);
 }
 
 fn hex_to_bytes(hex: &str) -> Vec<u8> {

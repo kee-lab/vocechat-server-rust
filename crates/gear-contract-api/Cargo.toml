@@ -6,10 +6,10 @@ edition = "2021"
 [dependencies]
 gclient = { git = "https://github.com/gear-tech/gear.git" }
 gear-core = { git = "https://github.com/gear-tech/gear.git" }
+gstd = { git = "https://github.com/gear-tech/gear.git", tag = "v1.0.1" }
 tokio = { version = "1.23.0", features = ["full"] }
-primitive-types = {features = ["scale-info"] }
-scale-info = { version = "2.5.0", default-features = false }
 parity-scale-codec = { version = "3.6.4", default-features = false }
+kee-bee-io = { git = "https://github.com/kee-lab/gear_friend_contract.git", branch = "workspace"}
 
 [dev-dependencies]
 gclient = { git = "https://github.com/gear-tech/gear.git" }
