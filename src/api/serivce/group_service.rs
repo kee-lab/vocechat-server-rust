@@ -1,10 +1,15 @@
-use poem::web::Data;
+use std::{collections::BTreeSet, sync::Arc};
 
-use crate::{state::State, api::Group};
+use poem::{web::{Data}, Error,Result, error::InternalServerError};
+use poem_openapi::payload::Json;
+use reqwest::StatusCode;
 
-async fn create(
+use crate::{state::{State, CacheGroup,GroupType, BroadcastEvent}, api::{Group, group::CreateGroupResponse, DateTime, Token}};
+
+pub async fn create(
     state: Data<&State>,
     req: Group,
+    uid: i64,
 ) -> Result<Json<CreateGroupResponse>> {
     let mut cache = state.cache.write().await;
 
@@ -12,7 +17,7 @@ async fn create(
         return Err(Error::from_status(StatusCode::BAD_REQUEST));
     } 
 
-    if req.is_public && !token.is_admin {
+    if req.is_public {
         // only admin can create public groups
         return Err(Error::from_status(StatusCode::FORBIDDEN));
     }
@@ -26,7 +31,7 @@ async fn create(
         req.members
             .iter()
             .copied()
-            .chain(std::iter::once(token.uid))
+            .chain(std::iter::once(uid))
             .collect::<BTreeSet<i64>>()
     } else {
         Default::default()
@@ -42,11 +47,11 @@ async fn create(
     // insert to sqlite
     let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
     let now = DateTime::now();
-    let owner = if req.is_public { None } else { Some(token.uid) };
+    let owner = if req.is_public { None } else { Some(uid) };
     let sql = "insert into `group` (name, description, owner, is_public, created_at, updated_at) values (?, ?, ?, ?, ?, ?)";
     let gid = sqlx::query(sql)
-        .bind(&req.0.name)
-        .bind(req.0.description.as_deref().unwrap_or_default())
+        .bind(&req.name)
+        .bind(req.description.as_deref().unwrap_or_default())
         .bind(owner)
         .bind(req.is_public)
         .bind(now)
@@ -74,10 +79,10 @@ async fn create(
             ty: if req.is_public {
                 GroupType::Public
             } else {
-                GroupType::Private { owner: token.uid }
+                GroupType::Private { owner: uid }
             },
-            name: req.0.name.clone(),
-            description: req.0.description.clone().unwrap_or_default(),
+            name: req.name.clone(),
+            description: req.description.clone().unwrap_or_default(),
             members: members.clone(),
             created_at: now,
             updated_at: now,
@@ -88,12 +93,12 @@ async fn create(
 
     let group = Group {
         gid,
-        owner: if req.is_public { None } else { Some(token.uid) },
-        name: req.0.name,
-        description: req.0.description,
+        owner: if req.is_public { None } else { Some(uid) },
+        name: req.name,
+        description: req.description,
         members: members.clone().into_iter().collect(),
-        is_public: req.0.is_public,
-        avatar_updated_at: req.0.avatar_updated_at,
+        is_public: req.is_public,
+        avatar_updated_at: req.avatar_updated_at,
         pinned_messages: Vec::new(),
     };
 
@@ -102,7 +107,7 @@ async fn create(
         .event_sender
         .send(Arc::new(BroadcastEvent::JoinedGroup {
             targets: {
-                if !req.0.is_public {
+                if !req.is_public {
                     members
                 } else {
                     cache.users.keys().copied().collect()

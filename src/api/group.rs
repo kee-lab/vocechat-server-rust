@@ -35,6 +35,8 @@ use crate::{
     State,
 };
 
+use super::serivce::group_service;
+
 /// Update group request
 #[derive(Debug, Object)]
 struct UpdateGroupRequest {
@@ -118,9 +120,9 @@ struct UnpinMessageRequest {
 
 /// Create group response
 #[derive(Debug, Object)]
-struct CreateGroupResponse {
-    gid: i64,
-    created_at: DateTime,
+pub struct CreateGroupResponse {
+    pub gid: i64,
+    pub created_at: DateTime,
 }
 
 pub struct ApiGroup;
@@ -240,6 +242,28 @@ impl ApiGroup {
             gid,
             created_at: now,
         }))
+    }
+
+
+    /// Create a new group
+    #[oai(path = "/init_self_group", method = "post", transform = "guest_forbidden")]
+    async fn init_self_group(
+        &self,
+        state: Data<&State>,
+        req: Json<Group>,
+        token: Token,
+    ) -> Result<Json<CreateGroupResponse>> {
+        let group = Group {
+            gid: 0,
+            owner: Some(token.uid),
+            name: format!("user {} share group",token.uid),
+            description: Some(format!("user {} share group",token.uid)),
+            members: Default::default(),
+            is_public: false,
+            avatar_updated_at: DateTime::now(),
+            pinned_messages: Default::default(),
+        };
+        return group_service::create(state, group, token.uid).await;
     }
 
     /// Upload group avatar
@@ -1150,6 +1174,83 @@ mod tests {
 
     use super::*;
     use crate::test_harness::TestServer;
+
+    #[tokio::test]
+    async fn test_init_self_group() {
+        let server = TestServer::new().await;
+        let admin_token = server.login_admin_with_device("web").await;
+                                                
+        let resp = server
+            .put("/api/token/device_token")
+            .header("X-API-Key", &admin_token)
+            .body_json(&json!({
+                "device_token": "abc"
+            }))
+            .send()
+            .await;
+        resp.assert_status_is_ok();
+
+        assert_eq!(
+            server
+                .state()
+                .cache
+                .read()
+                .await
+                .users
+                .get(&1)
+                .unwrap()
+                .devices
+                .get("web")
+                .unwrap()
+                .device_token
+                .as_deref(),
+            Some("abc")
+        );
+
+        let device_token2 = sqlx::query_as::<_, (Option<String>,)>(
+            "select device_token from device where uid = ? and device = ?",
+        )
+        .bind(1)
+        .bind("web")
+        .fetch_one(&server.state().db_pool)
+        .await
+        .map(|(t,)| t)
+        .unwrap();
+        assert_eq!(device_token2.as_deref(), Some("abc"));
+
+        let resp = server
+            .put("/api/token/device_token")
+            .header("X-API-Key", &admin_token)
+            .body_json(&json!({ "device_token": null }))
+            .send()
+            .await;
+        resp.assert_status_is_ok();
+
+        assert!(server
+            .state()
+            .cache
+            .read()
+            .await
+            .users
+            .get(&1)
+            .unwrap()
+            .devices
+            .get("web")
+            .unwrap()
+            .device_token
+            .is_none());
+
+        let device_token2 = sqlx::query_as::<_, (Option<String>,)>(
+            "select device_token from device where uid = ? and device = ?",
+        )
+        .bind(1)
+        .bind("web")
+        .fetch_one(&server.state().db_pool)
+        .await
+        .map(|(t,)| t)
+        .unwrap();
+        assert_eq!(device_token2, None);
+    }
 
     #[tokio::test]
     async fn test_crud() {
