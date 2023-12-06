@@ -1178,6 +1178,8 @@ mod tests {
     #[tokio::test]
     async fn test_init_self_group() {
         let server = TestServer::new().await;
+        let cloud_token: String = server.login("cloud@gmail.com");
+        println!("cloud_token is:{}", cloud_token);
         let admin_token = server.login_admin_with_device("web").await;
                                                 
         let resp = server
