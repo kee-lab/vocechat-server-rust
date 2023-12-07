@@ -1143,17 +1143,17 @@ impl ApiToken {
             .map_err(InternalServerError)?;
         info!("finished insert twitter_user!");
         // }
-        let group = Group {
-            gid: 0,
-            owner: Some(token.uid),
-            name: format!("user {} share group",token.uid),
-            description: Some(format!("user {} share group",token.uid)),
-            members: Default::default(),
-            is_public: false,
-            avatar_updated_at: DateTime::now(),
-            pinned_messages: Default::default(),
-        };
-        group_service::create(state, group, token.uid).await?;
+        // let group = Group {
+        //     gid: 0,
+        //     owner: Some(token.uid),
+        //     name: format!("user {} share group",token.uid),
+        //     description: Some(format!("user {} share group",token.uid)),
+        //     members: Default::default(),
+        //     is_public: false,
+        //     avatar_updated_at: DateTime::now(),
+        //     pinned_messages: Default::default(),
+        // };
+        // group_service::create(state, group, token.uid).await?;
         tx.commit().await.map_err(InternalServerError)?;
 
         // update user info
