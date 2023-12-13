@@ -1178,13 +1178,13 @@ mod tests {
     #[tokio::test]
     async fn test_init_self_group() {
         let server = TestServer::new().await;
-        let cloud_token: String = server.login("cloud@gmail.com");
+        let cloud_token: String = server.login("cloud@gmail.com").await;
         println!("cloud_token is:{}", cloud_token);
-        let admin_token = server.login_admin_with_device("web").await;
-                                                
+        // let admin_token = server.login_admin_with_device("web").await;
+        // body is Group.
         let resp = server
-            .put("/api/token/device_token")
-            .header("X-API-Key", &admin_token)
+            .put("/api/group/init_self_group")
+            .header("X-API-Key", &cloud_token)
             .body_json(&json!({
                 "device_token": "abc"
             }))
