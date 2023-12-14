@@ -250,7 +250,6 @@ impl ApiGroup {
     async fn init_self_group(
         &self,
         state: Data<&State>,
-        req: Json<Group>,
         token: Token,
     ) -> Result<Json<CreateGroupResponse>> {
         let group = Group {
