@@ -253,16 +253,20 @@ impl ApiGroup {
         req: Json<Group>,
         token: Token,
     ) -> Result<Json<CreateGroupResponse>> {
-        let group = Group {
-            gid: 0,
-            owner: Some(token.uid),
-            name: format!("user {} share group",token.uid),
-            description: Some(format!("user {} share group",token.uid)),
-            members: Default::default(),
-            is_public: false,
-            avatar_updated_at: DateTime::now(),
-            pinned_messages: Default::default(),
-        };
+        
+        // let group = Group {
+        //     gid: 0,
+        //     owner: Some(token.uid),
+        //     name: format!("user {} share group",token.uid),
+        //     description: Some(format!("user {} share group",token.uid)),
+        //     members: Default::default(),
+        //     is_public: false,
+        //     avatar_updated_at: DateTime::now(),
+        //     pinned_messages: Default::default(),
+        // };
+
+        
+        let group = req.0;
         return group_service::create(state, group, token.uid).await;
     }
 
@@ -1180,11 +1184,11 @@ mod tests {
         let server = TestServer::new().await;
         let cloud_token: String = server.login("cloud@gmail.com").await;
         println!("cloud_token is:{}", cloud_token);
-        // let admin_token = server.login_admin_with_device("web").await;
+        let admin_token = server.login_admin_with_device("web").await;
         // body is Group.
         let resp = server
-            .put("/api/group/init_self_group")
-            .header("X-API-Key", &cloud_token)
+            .put("/api/token/device_token")
+            .header("X-API-Key", &admin_token)
             .body_json(&json!({
                 "device_token": "abc"
             }))

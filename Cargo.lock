@@ -3320,7 +3320,7 @@ dependencies = [
 [[package]]
 name = "kee-bee-io"
 version = "0.1.0"
-source = "git+https://github.com/kee-lab/gear_friend_contract.git?branch=workspace#3ddb4d0ea41756367aec3c1043d17b71e22e28d3"
+source = "git+https://github.com/kee-lab/gear_friend_contract.git?branch=workspace#c6ef181db00b75e14f84e8c7e22a75f25226e054"
 dependencies = [
  "gmeta",
  "gstd",
