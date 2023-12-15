@@ -253,19 +253,17 @@ impl ApiGroup {
         token: Token,
     ) -> Result<Json<CreateGroupResponse>> {
         
-        // let group = Group {
-        //     gid: 0,
-        //     owner: Some(token.uid),
-        //     name: format!("user {} share group",token.uid),
-        //     description: Some(format!("user {} share group",token.uid)),
-        //     members: Default::default(),
-        //     is_public: false,
-        //     avatar_updated_at: DateTime::now(),
-        //     pinned_messages: Default::default(),
-        // };
-
+        let group = Group {
+            gid: 0,
+            owner: Some(token.uid),
+            name: format!("user {} share group",token.uid),
+            description: Some(format!("user {} share group",token.uid)),
+            members: Default::default(),
+            is_public: false,
+            avatar_updated_at: DateTime::now(),
+            pinned_messages: Default::default(),
+        };
         
-        let group = req.0;
         return group_service::create(state, group, token.uid).await;
     }
 
