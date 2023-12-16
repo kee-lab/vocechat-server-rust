@@ -706,29 +706,33 @@ impl ApiGroup {
 
     /// Get a group by owner id
     #[oai(path = "/getGroupByOwner", method = "get")]
-    async fn get_group_by_owner(&self, state: Data<&State>,token: Token) -> Result<Json<Group>> {
+    async fn get_group_by_owner(&self, state: Data<&State>,token: Token) -> Result<Json<Option<Group>>> {
         let db_pool = &state.db_pool;
         let sql = "SELECT gid,name,owner,is_public,description,created_at,updated_at,avatar_updated_at from `group` where owner = ?";
 
         let result = sqlx::query_as::<_, (i64,String,i64,bool,String,DateTime,DateTime,DateTime)>(sql)
             .bind(token.uid)
             .fetch_one(db_pool)
-            .await
-            .unwrap();
+            .await;
 
-        let (gid,name,owner,is_public,description,created_at,updated_at,avatar_updated_at) = result;
-        
-        let group = Group{ 
-            gid, 
-            owner:Some(owner), 
-            name, 
-            description:Some(description), 
-            members: vec![], 
-            is_public, 
-            avatar_updated_at, 
-            pinned_messages: vec![],
-        };
-        Ok(Json(group))
+        match result {
+            Ok((gid,name,owner,is_public,description,created_at,updated_at,avatar_updated_at))=>{
+                let group = Group{ 
+                    gid, 
+                    owner:Some(owner), 
+                    name, 
+                    description:Some(description), 
+                    members: vec![], 
+                    is_public, 
+                    avatar_updated_at, 
+                    pinned_messages: vec![],
+                };
+                return Ok(Json(Some(group)));
+            }
+            Err(_)=>{
+                return Ok(Json(None));
+            }
+        }
         
     }
     
