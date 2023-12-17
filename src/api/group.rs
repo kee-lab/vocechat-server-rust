@@ -841,6 +841,80 @@ impl ApiGroup {
         Ok(())
     }
 
+    /// Add some new members to the specified group
+    // TODO check the user have the owner's share.
+    #[oai(path = "/:ownerId/attend", method = "post")]
+    async fn attend_subject_group(
+        &self,
+        state: Data<&State>,
+        token: Token,
+        gid: Path<i64>,
+    ) -> Result<()> {
+        let mut cache = state.cache.write().await;
+
+        // TODO check the user has the share of owner.
+        
+
+        if !members.iter().all(|uid| cache.users.contains_key(uid)) {
+            // invalid uid
+            return Err(Error::from_status(StatusCode::BAD_REQUEST));
+        }
+
+        let group = cache
+            .groups
+            .get_mut(&gid.0)
+            .ok_or_else(|| Error::from_status(StatusCode::NOT_FOUND))?;
+
+        match group.ty {
+            GroupType::Public => return Err(Error::from_status(StatusCode::FORBIDDEN)),
+            GroupType::Private { .. } if !group.members.contains(&token.uid) && !token.is_admin => {
+                return Err(Error::from_status(StatusCode::FORBIDDEN));
+            }
+            _ => {}
+        }
+
+        for uid in members.iter() {
+            if group.contains_user(*uid) {
+                // already in the group
+                return Err(Error::from_status(StatusCode::BAD_REQUEST));
+            }
+        }
+
+        // update sqlite
+        let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
+        for uid in members.iter() {
+            sqlx::query("insert into group_user (gid, uid) values (?, ?)")
+                .bind(gid.0)
+                .bind(uid)
+                .execute(&mut tx)
+                .await
+                .map_err(InternalServerError)?;
+        }
+        tx.commit().await.map_err(InternalServerError)?;
+
+        // update cache
+        let original_members = group.members.clone();
+        group.members.extend(members.0.clone());
+
+        // broadcast event
+        let _ = state
+            .event_sender
+            .send(Arc::new(BroadcastEvent::JoinedGroup {
+                targets: members.0.clone().into_iter().collect(),
+                group: group.api_group(gid.0),
+            }));
+
+        let _ = state
+            .event_sender
+            .send(Arc::new(BroadcastEvent::UserJoinedGroup {
+                targets: original_members,
+                gid: gid.0,
+                uid: members.0.clone(),
+            }));
+
+        Ok(())
+    }
+
     /// Remove some members from the specified group
     #[oai(path = "/:gid/members/remove", method = "post")]
     async fn remove_members(
