@@ -7815,6 +7815,7 @@ dependencies = [
  "fnv",
  "fs2",
  "futures-util",
+ "gear-contract-api",
  "hex",
  "hmac 0.11.0",
  "image",

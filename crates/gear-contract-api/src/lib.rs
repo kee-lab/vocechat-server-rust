@@ -7,6 +7,7 @@ use parity_scale_codec::{Encode};
 const WASM_PATH: &str = "./target/wasm32-unknown-unknown/release/gear_friend_share.opt.wasm";
 const CONTRACT_ADDRESS:&str = "0x1371d9c044ff3f249eb6a647c4807ed5e4f07ef98ea62a7043e9546b547503e5";
 
+//check the user have the subject share
 pub async fn user_have_subject_share(subject:&str,user:&str) -> Result<bool> {
     // Create API instance
     let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
@@ -26,7 +27,7 @@ pub async fn user_have_subject_share(subject:&str,user:&str) -> Result<bool> {
     let payload = StateQuery::SubjectShareUser{subject,user}.encode();
 
 
-    // Send the PING message
+    // check the user have the subject share
     let share_state:StateReply = api.read_state(program_id, payload).await.expect("read share error!");
     println!("share_state is:{:?}",share_state);
     if let StateReply::ShareAmount(amount) = share_state{

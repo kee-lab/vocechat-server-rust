@@ -16,6 +16,7 @@ use poem_openapi::{
     payload::{Json, PlainText},
     Object, OpenApi,
 };
+use tokio_stream::StreamExt;
 
 use crate::{
     api::{
@@ -851,9 +852,36 @@ impl ApiGroup {
         gid: Path<i64>,
     ) -> Result<()> {
         let mut cache = state.cache.write().await;
+        let db_pool = &state.db_pool;
+
+        let user_id = token.uid;
+        let user_wallet_query_sql = "SELECT address from wallet w where uid=?";
+        let user_walet = sqlx::query_as::<_,(String,)>(user_wallet_query_sql)
+            .bind(user_id)
+            .fetch_one(db_pool)
+            .await
+            .map(|(wallet,)|wallet)
+            .map_err(InternalServerError)?
+            ;
+
+        //从Group中获取ownerId.
+        let gid = gid.0;
+        let subject_wallet_query_sql = "SELECT address from wallet where uid = (SELECT uid from group_user gu where gu.gid = ? )";
+        let subject_wallet = sqlx::query_as::<_,(String,)>(subject_wallet_query_sql)
+            .bind(gid)
+            .fetch_one(db_pool)
+            .await
+            .map(|(wallet,)|wallet)
+            .map_err(InternalServerError)?;
+
+        
+        
 
         // TODO check the user has the share of owner.
-        
+        let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_walet).await.map_err(InternalServerError)?;
+        if !user_have_subject_share {
+            return Err(InternalServerError("user have no subject"));
+        }
 
         if !members.iter().all(|uid| cache.users.contains_key(uid)) {
             // invalid uid
