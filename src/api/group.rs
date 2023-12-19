@@ -856,7 +856,7 @@ impl ApiGroup {
 
         let user_id = token.uid;
         let user_wallet_query_sql = "SELECT address from wallet w where uid=?";
-        let user_walet = sqlx::query_as::<_,(String,)>(user_wallet_query_sql)
+        let user_wallet = sqlx::query_as::<_,(String,)>(user_wallet_query_sql)
             .bind(user_id)
             .fetch_one(db_pool)
             .await
@@ -884,7 +884,7 @@ impl ApiGroup {
         
 
         // TODO check the user has the share of owner.
-        let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_walet).await.map_err(InternalServerError)?;
+        let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_wallet).await.map_err(InternalServerError)?;
         if !user_have_subject_share {
             return Err(Error::from_string("user have no subject",StatusCode::OK));
         }
