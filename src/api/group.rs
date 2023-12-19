@@ -843,13 +843,13 @@ impl ApiGroup {
     }
 
     /// Add some new members to the specified group
-    // TODO check the user have the owner's share.
-    #[oai(path = "/:ownerId/attend", method = "post")]
+    // check the user have the owner's share.
+    #[oai(path = "/:subject_id/attend", method = "post")]
     async fn attend_subject_group(
         &self,
         state: Data<&State>,
         token: Token,
-        gid: Path<i64>,
+        subject_id: Path<i64>,
     ) -> Result<()> {
         let mut cache = state.cache.write().await;
         let db_pool = &state.db_pool;
@@ -861,36 +861,42 @@ impl ApiGroup {
             .fetch_one(db_pool)
             .await
             .map(|(wallet,)|wallet)
-            .map_err(InternalServerError)?
-            ;
+            .map_err(InternalServerError)?;
 
         //从Group中获取ownerId.
-        let gid = gid.0;
-        let subject_wallet_query_sql = "SELECT address from wallet where uid = (SELECT uid from group_user gu where gu.gid = ? )";
+        let subject_id = subject_id.0;
+        let subject_wallet_query_sql = "SELECT address from wallet where uid = ?";
         let subject_wallet = sqlx::query_as::<_,(String,)>(subject_wallet_query_sql)
-            .bind(gid)
+            .bind(subject_id)
             .fetch_one(db_pool)
             .await
             .map(|(wallet,)|wallet)
             .map_err(InternalServerError)?;
 
+        let query_group_by_owner_sql = "SELECT gid FROM `group` g WHERE g.owner = 6";
+        let gid = sqlx::query_as::<_,(i64,)>(query_group_by_owner_sql)
+        .bind(subject_id)
+        .fetch_one(db_pool)
+        .await
+        .map(|(gid,)|gid)
+        .map_err(InternalServerError)?;
         
         
 
         // TODO check the user has the share of owner.
         let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_walet).await.map_err(InternalServerError)?;
         if !user_have_subject_share {
-            return Err(InternalServerError("user have no subject"));
+            return Err(Error::from_string("user have no subject",StatusCode::OK));
         }
 
-        if !members.iter().all(|uid| cache.users.contains_key(uid)) {
-            // invalid uid
-            return Err(Error::from_status(StatusCode::BAD_REQUEST));
-        }
+        // if !members.iter().all(|uid| cache.users.contains_key(uid)) {
+        //     // invalid uid
+        //     return Err(Error::from_status(StatusCode::BAD_REQUEST));
+        // }
 
         let group = cache
             .groups
-            .get_mut(&gid.0)
+            .get_mut(&gid)
             .ok_or_else(|| Error::from_status(StatusCode::NOT_FOUND))?;
 
         match group.ty {
@@ -900,44 +906,34 @@ impl ApiGroup {
             }
             _ => {}
         }
-
-        for uid in members.iter() {
-            if group.contains_user(*uid) {
-                // already in the group
-                return Err(Error::from_status(StatusCode::BAD_REQUEST));
-            }
-        }
-
         // update sqlite
         let mut tx = state.db_pool.begin().await.map_err(InternalServerError)?;
-        for uid in members.iter() {
-            sqlx::query("insert into group_user (gid, uid) values (?, ?)")
-                .bind(gid.0)
-                .bind(uid)
-                .execute(&mut tx)
-                .await
-                .map_err(InternalServerError)?;
-        }
+        sqlx::query("insert into group_user (gid, uid) values (?, ?)")
+            .bind(gid)
+            .bind(user_id)
+            .execute(&mut tx)
+            .await
+            .map_err(InternalServerError)?;
         tx.commit().await.map_err(InternalServerError)?;
 
         // update cache
         let original_members = group.members.clone();
-        group.members.extend(members.0.clone());
+        group.members.insert(user_id);
 
         // broadcast event
         let _ = state
             .event_sender
             .send(Arc::new(BroadcastEvent::JoinedGroup {
-                targets: members.0.clone().into_iter().collect(),
-                group: group.api_group(gid.0),
+                targets: vec![user_id].into_iter().collect(),
+                group: group.api_group(gid),
             }));
 
         let _ = state
             .event_sender
             .send(Arc::new(BroadcastEvent::UserJoinedGroup {
                 targets: original_members,
-                gid: gid.0,
-                uid: members.0.clone(),
+                gid: gid,
+                uid: vec![user_id],
             }));
 
         Ok(())
