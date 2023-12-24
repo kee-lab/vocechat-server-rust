@@ -61,14 +61,12 @@ pub async fn create(
         .map_err(InternalServerError)?
         .last_insert_rowid();
 
-    for id in &members {
-        sqlx::query("insert into group_user (gid, uid) values (?, ?)")
-            .bind(gid)
-            .bind(*id)
-            .execute(&mut tx)
-            .await
-            .map_err(InternalServerError)?;
-    }
+    sqlx::query("insert into group_user (gid, uid) values (?, ?)")
+        .bind(gid)
+        .bind(owner)
+        .execute(&mut tx)
+        .await
+        .map_err(InternalServerError)?;
 
     tx.commit().await.map_err(InternalServerError)?;
 
