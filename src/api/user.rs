@@ -495,10 +495,10 @@ impl ApiUser {
         let wallet_address = wallet_address.0;
         let db_pool = &state.db_pool;
         info!(uid=uid,address=wallet_address,"debug check walletExist!");
-        let sql = "select address from wallet where uid = ? and address = ?";
+        let sql = "select address from wallet where uid = ?";
         let wallet_address = sqlx::query_as::<_, (String,)>(sql)
             .bind(uid)
-            .bind(wallet_address)
+            // .bind(wallet_address)
             .fetch_optional(db_pool)
             .await
             .map_err(InternalServerError)?;

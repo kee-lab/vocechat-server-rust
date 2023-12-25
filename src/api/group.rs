@@ -866,15 +866,13 @@ impl ApiGroup {
 
         //从Group中获取ownerId.
         let subject_id = subject_id.0;
-        let subject_wallet_query_sql = "SELECT id,address,uid from wallet";
-        let mut subject_wallet = sqlx::query_as::<_,(i64,String,i64,)>(subject_wallet_query_sql)
-            // .bind(subject_id)
-            .fetch(db_pool);
-        while let Some(res) = subject_wallet.next().await{
-
-            let (id,address,uid)=res.map_err(InternalServerError)?;
-            tracing::info!(id = id,address = address,uid=uid ,"log debug address");
-        }
+        let subject_wallet_query_sql = "SELECT address from wallet where uid = ?";
+        let subject_wallet = sqlx::query_as::<_,(String,)>(subject_wallet_query_sql)
+            .bind(subject_id)
+            .fetch_one(db_pool)
+            .await
+            .map(|(wallet,)|wallet)
+            .map_err(InternalServerError)?;
         
 
         let query_group_by_owner_sql = "SELECT gid FROM `group` g WHERE g.owner = ?";
