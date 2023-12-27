@@ -856,14 +856,14 @@ impl ApiGroup {
         let db_pool = &state.db_pool;
 
         let user_id = token.uid;
-        let user_wallet_query_sql = "SELECT address from wallet w where uid=?";
+        let user_wallet_query_sql = "SELECT address from wallet w where uid = ?";
         let user_wallet = sqlx::query_as::<_,(String,)>(user_wallet_query_sql)
             .bind(user_id)
             .fetch_one(db_pool)
             .await
             .map(|(wallet,)|wallet)
             .map_err(InternalServerError)?;
-
+        tracing::info!(user_wallet=user_wallet,"user_wallet is:");
         //从Group中获取ownerId.
         let subject_id = subject_id.0;
         let subject_wallet_query_sql = "SELECT address from wallet where uid = ?";
@@ -873,7 +873,7 @@ impl ApiGroup {
             .await
             .map(|(wallet,)|wallet)
             .map_err(InternalServerError)?;
-        
+        tracing::info!(subject_wallet=subject_wallet,"subject_wallet is:");
 
         let query_group_by_owner_sql = "SELECT gid FROM `group` g WHERE g.owner = ?";
         let gid = sqlx::query_as::<_,(i64,)>(query_group_by_owner_sql)
@@ -883,10 +883,11 @@ impl ApiGroup {
         .map(|(gid,)|gid)
         .map_err(InternalServerError)?;
         
-        
+        tracing::info!(gid=gid,"gid is:");
 
         // TODO check the user has the share of owner.
         let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_wallet).await.map_err(InternalServerError)?;
+        tracing::info!(user_have_subject_share=user_have_subject_share,"user_have_subject_share is:");
         if !user_have_subject_share {
             return Err(Error::from_string("user have no subject",StatusCode::OK));
         }
@@ -900,11 +901,12 @@ impl ApiGroup {
             .groups
             .get_mut(&gid)
             .ok_or_else(|| Error::from_status(StatusCode::NOT_FOUND))?;
-
+        tracing::info!("group.members is:{:?}",group.members);
+        tracing::info!(token.uid=token.uid,"token.uid is:");
         match group.ty {
-            GroupType::Public => return Err(Error::from_status(StatusCode::FORBIDDEN)),
-            GroupType::Private { .. } if !group.members.contains(&token.uid) && !token.is_admin => {
-                return Err(Error::from_status(StatusCode::FORBIDDEN));
+            GroupType::Public => return Err(Error::from_string("Group is public",StatusCode::INTERNAL_SERVER_ERROR)),
+            GroupType::Private { .. } if group.members.contains(&token.uid) && !token.is_admin => {
+                return Err(Error::from_string("group members have the user",StatusCode::INTERNAL_SERVER_ERROR));
             }
             _ => {}
         }
@@ -921,7 +923,7 @@ impl ApiGroup {
         // update cache
         let original_members = group.members.clone();
         group.members.insert(user_id);
-
+        tracing::info!("original_members is:");
         // broadcast event
         let _ = state
             .event_sender
@@ -929,7 +931,7 @@ impl ApiGroup {
                 targets: vec![user_id].into_iter().collect(),
                 group: group.api_group(gid),
             }));
-
+        tracing::info!("send message to user_id");
         let _ = state
             .event_sender
             .send(Arc::new(BroadcastEvent::UserJoinedGroup {
@@ -937,7 +939,7 @@ impl ApiGroup {
                 gid: gid,
                 uid: vec![user_id],
             }));
-
+        tracing::info!("send message to original_members");
         Ok(())
     }
 

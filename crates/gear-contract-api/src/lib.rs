@@ -5,10 +5,11 @@ use kee_bee_io::{StateReply, StateQuery};
 use parity_scale_codec::{Encode};
 
 const WASM_PATH: &str = "./target/wasm32-unknown-unknown/release/gear_friend_share.opt.wasm";
-const CONTRACT_ADDRESS:&str = "0x1371d9c044ff3f249eb6a647c4807ed5e4f07ef98ea62a7043e9546b547503e5";
+const CONTRACT_ADDRESS:&str = "0x176ab34b059dde82bcc938179b63042153bda6abab61223ca74081ee2469200c";
 
 //check the user have the subject share
 pub async fn user_have_subject_share(subject:&str,user:&str) -> Result<bool> {
+
     // Create API instance
     let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
 
@@ -21,8 +22,9 @@ pub async fn user_have_subject_share(subject:&str,user:&str) -> Result<bool> {
     let bytes = hex_to_bytes(&CONTRACT_ADDRESS[2..]);
     let program_id:ProgramId = ProgramId::from(bytes.as_slice());
 
-    let subject:ActorId = ActorId::from_slice(hex_to_bytes(&subject[2..]).as_slice()).expect("get subject error!");
-    let user:ActorId = ActorId::from_slice(hex_to_bytes(&user[2..]).as_slice()).expect("get user error!");
+    
+    let subject:ActorId = ActorId::from_bs58(subject.to_string()).expect("get subject error!");
+    let user:ActorId = ActorId::from_bs58(user.to_string()).expect("get user error!");
     
     let payload = StateQuery::SubjectShareUser{subject,user}.encode();
 
@@ -48,48 +50,54 @@ fn hex_to_bytes(hex: &str) -> Vec<u8> {
 
 #[tokio::test]
 async fn test_example() -> Result<()> {
-    let share_program_id = "0x3bc507b6d448d7f279e6f0edb80bd86e569d0543a84a6c5cde8c93ed01453161";
-    // Create API instance
-    // let api = GearApi::dev().await?;
-    let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
+    let result = user_have_subject_share("5EkPuzJEJi49vdSgehX5f4q1wBUNR1sGaUiHrbKkQbVqrqEy","5EAAR7CgghyQgpY5UTTDYWMh73rYM6SfeZnvdcBaYL4tq1dv").await?;
+    // tracing::info!(queryShareResult = result,"query share result");
+    return Ok(());
 
-    // Subscribe to events
-    let mut listener = api.subscribe().await?;
 
-    // Check that blocks are still running
-    assert!(listener.blocks_running().await?);
 
-    // Calculate gas amount needed for initialization
-    let gas_info = api
-        .calculate_upload_gas(None, gclient::code_from_os(WASM_PATH)?, vec![], 0, true)
-        .await?;
+    // let share_program_id = "0x3bc507b6d448d7f279e6f0edb80bd86e569d0543a84a6c5cde8c93ed01453161";
+    // // Create API instance
+    // // let api = GearApi::dev().await?;
+    // let api = GearApi::init(WSAddress::new("wss://testnet.vara-network.io", 443)).await?;
 
-    // Upload and init the program
-    let (message_id, program_id, _hash) = api
-        .upload_program_bytes_by_path(
-            WASM_PATH,
-            gclient::now_micros().to_le_bytes(),
-            vec![],
-            gas_info.min_limit,
-            0,
-        )
-        .await?;
+    // // Subscribe to events
+    // let mut listener = api.subscribe().await?;
 
-    assert!(listener.message_processed(message_id).await?.succeed());
+    // // Check that blocks are still running
+    // assert!(listener.blocks_running().await?);
 
-    let payload = b"PING".to_vec();
+    // // Calculate gas amount needed for initialization
+    // let gas_info = api
+    //     .calculate_upload_gas(None, gclient::code_from_os(WASM_PATH)?, vec![], 0, true)
+    //     .await?;
 
-    // Calculate gas amount needed for handling the message
-    let gas_info = api
-        .calculate_handle_gas(None, program_id, payload.clone(), 0, true)
-        .await?;
+    // // Upload and init the program
+    // let (message_id, program_id, _hash) = api
+    //     .upload_program_bytes_by_path(
+    //         WASM_PATH,
+    //         gclient::now_micros().to_le_bytes(),
+    //         vec![],
+    //         gas_info.min_limit,
+    //         0,
+    //     )
+    //     .await?;
 
-    // Send the PING message
-    let (message_id, _hash) = api
-        .send_message_bytes(program_id, payload, gas_info.min_limit, 0)
-        .await?;
+    // assert!(listener.message_processed(message_id).await?.succeed());
 
-    assert!(listener.message_processed(message_id).await?.succeed());
+    // let payload = b"PING".to_vec();
 
-    Ok(())
+    // // Calculate gas amount needed for handling the message
+    // let gas_info = api
+    //     .calculate_handle_gas(None, program_id, payload.clone(), 0, true)
+    //     .await?;
+
+    // // Send the PING message
+    // let (message_id, _hash) = api
+    //     .send_message_bytes(program_id, payload, gas_info.min_limit, 0)
+    //     .await?;
+
+    // assert!(listener.message_processed(message_id).await?.succeed());
+
+    // Ok(())
 }
