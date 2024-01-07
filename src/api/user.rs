@@ -1047,6 +1047,33 @@ impl ApiUser {
         return Json(twitter_users);
     }
 
+
+    /// Get new twitter user info
+    #[oai(path = "/getTwitterUserByUid/:uid", method = "get")]
+    async fn get_twitter_user_by_uid(&self, state: Data<&State>,uid: Path<i64>) -> Result<Json<TwitterUserInfo>> {
+        let uid = uid.0;
+        let db_pool = &state.db_pool;
+        let sql = "select uid,twitter_id,username,profile_image_url,created_time,updated_time,share_supply from twitter_user where uid=?";
+        let twitter_user =
+            sqlx::query_as::<_, (i64, i64, String, String, DateTime, DateTime,i64)>(sql)
+            .bind(uid)
+            .fetch_one(db_pool).await.map_err(InternalServerError)?;
+
+        let (uid,twitter_id,username,profile_image_url,created_time,updated_time,share_supply) = twitter_user;
+        let result = TwitterUserInfo{
+            uid,
+            twitter_id:twitter_id.to_string(),
+            username,
+            profile_image_url:Some(profile_image_url),
+            created_time:Some(created_time),
+            updated_time:Some(updated_time),
+            price:share::get_price(share_supply.try_into().unwrap(),1),
+            share_supply
+        };
+        
+        return Ok(Json(result));
+    }
+
     /// Send message to the specified user
     #[oai(path = "/:uid/send", method = "post", transform = "guest_forbidden")]
     async fn send(

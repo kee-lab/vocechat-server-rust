@@ -885,11 +885,11 @@ impl ApiGroup {
         
         tracing::info!(gid=gid,"gid is:");
 
-        // TODO check the user has the share of owner.
+        // check the user has the share of owner.
         let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_wallet).await.map_err(InternalServerError)?;
         tracing::info!(user_have_subject_share=user_have_subject_share,"user_have_subject_share is:");
         if !user_have_subject_share {
-            return Err(Error::from_string("user have no subject",StatusCode::OK));
+            return Err(Error::from_string("user have no subject",StatusCode::INTERNAL_SERVER_ERROR));
         }
 
         // if !members.iter().all(|uid| cache.users.contains_key(uid)) {
@@ -918,6 +918,16 @@ impl ApiGroup {
             .execute(&mut tx)
             .await
             .map_err(InternalServerError)?;
+
+        // buy success and should increment the share supply of twitter
+        let increment_share_supply_sql = "update twitter_user set share_supply = share_supply+1 where uid=?";
+        sqlx::query(increment_share_supply_sql)
+        .bind(subject_id)
+        .execute(&mut tx)
+        .await
+        .map_err(InternalServerError)?;
+
+
         tx.commit().await.map_err(InternalServerError)?;
 
         // update cache
@@ -940,6 +950,8 @@ impl ApiGroup {
                 uid: vec![user_id],
             }));
         tracing::info!("send message to original_members");
+
+        
         Ok(())
     }
 
