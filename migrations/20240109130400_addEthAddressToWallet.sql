@@ -1,0 +1,1 @@
+ALTER TABLE wallet ADD eth_address text;

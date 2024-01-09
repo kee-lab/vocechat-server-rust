@@ -999,7 +999,7 @@ impl ApiGroup {
 
         // check the user has the share of owner.
         let user_have_subject_share = gear_contract_api::user_have_subject_share(&subject_wallet,&user_wallet).await.expect("query the subject have the user share error!");
-        tracing::info!(user_have_subject_share=user_have_subject_share,"user_have_subject_share is:");
+        tracing::info!(user_have_subject_share = user_have_subject_share,"user_have_subject_share is:");
         if user_have_subject_share {
             return Err(Error::from_string("user have subject",StatusCode::INTERNAL_SERVER_ERROR));
         }
